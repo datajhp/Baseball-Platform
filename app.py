@@ -9,10 +9,10 @@ import datetime
 from datetime import datetime as dt
 import uuid
 import hashlib
+import json
+import re
+import xml.etree.ElementTree as ET
 
-# ══════════════════════════════════════════
-#  기본 설정
-# ══════════════════════════════════════════
 today = datetime.date.today()
 
 st.set_page_config(
@@ -22,1071 +22,640 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ══════════════════════════════════════════
-#  디자인 시스템 (Toss 스타일)
-# ══════════════════════════════════════════
 st.markdown("""
 <style>
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-
-/* ─── 기본 ─── */
-*, *::before, *::after {
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-    box-sizing: border-box;
-}
-.stApp { background: #F2F4F7 !important; }
-.main .block-container {
-    padding: 1.5rem 2rem 5rem 2rem !important;
-    max-width: 1440px !important;
-}
-header[data-testid="stHeader"] { background: transparent !important; }
-section[data-testid="stSidebar"] { display: none; }
-
-/* ─── 탭 네비게이션 ─── */
-div[data-testid="stTabs"] > div:first-child > div[role="tablist"] {
-    background: #FFFFFF !important;
-    border-radius: 18px !important;
-    padding: 7px !important;
-    gap: 4px !important;
-    border: 1px solid #E5E8EB !important;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
-    margin-bottom: 28px !important;
-}
-div[data-testid="stTabs"] button[role="tab"] {
-    border-radius: 13px !important;
-    padding: 10px 24px !important;
-    font-size: 15px !important;
-    font-weight: 600 !important;
-    color: #6B7684 !important;
-    border: none !important;
-    background: transparent !important;
-    transition: all 0.25s ease !important;
-    letter-spacing: -0.1px !important;
-}
-div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-    background: #3182F6 !important;
-    color: #FFFFFF !important;
-    box-shadow: 0 3px 12px rgba(49,130,246,0.35) !important;
-}
-div[data-testid="stTabs"] div[role="tabpanel"] {
-    border: none !important;
-    padding: 0 !important;
-}
-
-/* ─── 히어로 배너 ─── */
-.hero {
-    background: linear-gradient(135deg, #0C2461 0%, #1E3799 40%, #3182F6 100%);
-    border-radius: 28px;
-    padding: 44px 52px;
-    margin-bottom: 32px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 16px 48px rgba(12,36,97,0.35);
-}
-.hero::before {
-    content: "⚾";
-    position: absolute;
-    right: 52px; top: 50%; transform: translateY(-50%);
-    font-size: 136px; opacity: 0.1; line-height: 1;
-}
-.hero::after {
-    content: "";
-    position: absolute; top: -80px; right: -80px;
-    width: 340px; height: 340px;
-    background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-}
-.hero-eyebrow {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(255,255,255,0.15); backdrop-filter: blur(8px);
-    color: rgba(255,255,255,0.92); padding: 5px 14px;
-    border-radius: 999px; font-size: 13px; font-weight: 600;
-    margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.2);
-}
-.hero h1 {
-    color: #FFFFFF !important; font-size: 36px !important;
-    font-weight: 800 !important; margin: 0 0 8px 0 !important;
-    letter-spacing: -1px !important; line-height: 1.15 !important;
-}
-.hero-sub {
-    color: rgba(255,255,255,0.65) !important;
-    font-size: 16px !important; margin: 0 !important; font-weight: 500 !important;
-}
-.hero-live {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(239,68,68,0.25); color: #FCA5A5;
-    padding: 4px 12px; border-radius: 999px;
-    font-size: 12px; font-weight: 700; margin-top: 14px;
-    border: 1px solid rgba(239,68,68,0.4);
-}
-.hero-live::before {
-    content: ""; width: 7px; height: 7px; border-radius: 50%;
-    background: #EF4444; animation: blink 1.4s infinite;
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-
-/* ─── 카드 ─── */
-.card {
-    background: #FFFFFF;
-    border-radius: 20px;
-    padding: 24px;
-    border: 1px solid #F0F2F5;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-    margin-bottom: 20px;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-.card:hover {
-    box-shadow: 0 6px 28px rgba(0,0,0,0.09);
-    transform: translateY(-1px);
-}
-.card-title {
-    font-size: 17px; font-weight: 700; color: #191F28;
-    margin: 0 0 18px 0; display: flex; align-items: center; gap: 8px;
-    letter-spacing: -0.3px;
-}
-.card-title-sm { font-size: 15px; font-weight: 700; color: #191F28; margin: 0 0 14px 0; }
-
-/* ─── 순위 테이블 ─── */
-.rank-table { width: 100%; border-collapse: collapse; }
-.rank-table th {
-    background: #F8F9FB; color: #8B95A1; font-weight: 600;
-    padding: 9px 6px; text-align: center; font-size: 11px;
-    letter-spacing: 0.3px; border-bottom: 2px solid #F0F2F5;
-}
-.rank-table td {
-    padding: 11px 6px; text-align: center; color: #333D4B;
-    border-bottom: 1px solid #F8F9FA; font-size: 13px;
-    transition: background 0.15s;
-}
-.rank-table tr.hl td {
-    background: linear-gradient(90deg,#EFF6FF,#F0F9FF);
-    color: #1D4ED8; font-weight: 700;
-}
-.rank-table tr:last-child td { border-bottom: none; }
-.rnum {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 22px; height: 22px; border-radius: 50%;
-    font-size: 11px; font-weight: 700;
-}
-.rnum-1 { background: #FEF3C7; color: #D97706; }
-.rnum-2 { background: #F1F5F9; color: #64748B; }
-.rnum-3 { background: #FFF3E0; color: #D4580A; }
-.rnum-n { background: #F2F4F7; color: #6B7684; }
-
-/* ─── 게시판 ─── */
-.post-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 16px;
-    background: white; border: 1px solid #F0F2F5; border-radius: 14px;
-    margin-bottom: 8px; transition: all 0.2s ease;
-}
-.post-row:hover { border-color: #BFDBFE; box-shadow: 0 4px 16px rgba(49,130,246,0.09); transform: translateY(-1px); }
-.cat-badge {
-    display: inline-flex; align-items: center;
-    background: #EFF6FF; color: #2563EB;
-    padding: 3px 9px; border-radius: 7px;
-    font-size: 11px; font-weight: 700; white-space: nowrap; letter-spacing: 0.2px;
-}
-.cat-badge.응원 { background: #FEF2F2; color: #DC2626; }
-.cat-badge.분석 { background: #F0FDF4; color: #16A34A; }
-.cat-badge.질문 { background: #FFF7ED; color: #EA580C; }
-.cat-badge.거래 { background: #F5F3FF; color: #7C3AED; }
-.post-title-txt {
-    font-size: 14px; font-weight: 600; color: #191F28;
-    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.post-meta-txt {
-    display: flex; gap: 10px; font-size: 11px; color: #8B95A1;
-    font-weight: 500; white-space: nowrap; align-items: center;
-}
-
-/* ─── 게시글 상세 ─── */
-.post-detail-box {
-    background: white; border-radius: 20px;
-    padding: 32px; border: 1px solid #F0F2F5;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-    margin-bottom: 12px;
-}
-.comment-box {
-    padding: 14px 0; border-bottom: 1px solid #F8F9FA;
-}
-.comment-box:last-child { border-bottom: none; }
-
-/* ─── 투표 바 ─── */
-.vote-bar-wrap {
-    display: flex; height: 52px; border-radius: 14px; overflow: hidden;
-    background: #F2F4F7; margin: 10px 0;
-}
-.vote-lotte {
-    background: linear-gradient(90deg,#B91C1C,#EF4444);
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-weight: 800; font-size: 14px;
-    transition: width 0.7s cubic-bezier(.4,0,.2,1);
-}
-.vote-opp {
-    background: linear-gradient(90deg,#1D4ED8,#3B82F6);
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-weight: 800; font-size: 14px; flex: 1;
-    transition: width 0.7s cubic-bezier(.4,0,.2,1);
-}
-
-/* ─── 버튼 ─── */
-div[data-testid="stButton"] button {
-    border-radius: 12px !important; font-weight: 700 !important;
-    font-size: 14px !important; transition: all 0.2s !important;
-    letter-spacing: -0.1px !important;
-}
-div[data-testid="stButton"] button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.12) !important;
-}
-
-/* ─── 입력 필드 ─── */
-div[data-testid="stTextInput"] input,
-div[data-testid="stTextArea"] textarea,
-div[data-testid="stSelectbox"] > div > div {
-    border: 2px solid #E5E8EB !important; border-radius: 12px !important;
-    font-size: 14px !important; transition: border-color 0.2s !important;
-    background: #FAFBFC !important;
-}
-div[data-testid="stTextInput"] input:focus,
-div[data-testid="stTextArea"] textarea:focus {
-    border-color: #3182F6 !important;
-    box-shadow: 0 0 0 4px rgba(49,130,246,0.1) !important;
-    background: white !important;
-}
-
-/* ─── 라디오 ─── */
-div[data-testid="stRadio"] > label { font-weight: 700 !important; color: #191F28 !important; margin-bottom: 10px !important; }
-div[data-testid="stRadio"] div[role="radiogroup"] > label {
-    background: #F8F9FA; border: 2px solid #E5E8EB;
-    border-radius: 12px; padding: 12px 16px; margin-bottom: 8px;
-    cursor: pointer; transition: all 0.2s; font-weight: 600 !important; color: #333D4B !important;
-    display: flex !important; align-items: center !important;
-}
-div[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked) {
-    background: #EFF6FF; border-color: #3182F6; color: #1D4ED8 !important;
-}
-
-/* ─── 링크 버튼 ─── */
-div[data-testid="stLinkButton"] a {
-    border-radius: 12px !important; font-weight: 700 !important; font-size: 14px !important;
-}
-
-/* ─── 선택박스 ─── */
-div[data-testid="stSelectbox"] > div { border-radius: 12px !important; }
-
-/* ─── iframe ─── */
-iframe { border-radius: 16px !important; }
-
-/* ─── 구분선 ─── */
-.toss-hr { border: none; border-top: 1px solid #F0F2F5; margin: 20px 0; }
-
-/* ─── 태그 ─── */
-.voter-tag {
-    display: inline-flex; align-items: center; gap: 4px;
-    background: #F2F4F7; color: #333D4B;
-    border-radius: 8px; padding: 5px 11px;
-    font-size: 12px; font-weight: 700; margin: 3px;
-}
-
-/* ─── 스탯 박스 ─── */
-.stat-box {
-    background: #F8F9FA; border-radius: 14px;
-    padding: 18px 16px; text-align: center;
-}
-.stat-val { font-size: 30px; font-weight: 800; color: #191F28; line-height: 1; }
-.stat-lbl { font-size: 12px; color: #8B95A1; font-weight: 600; margin-top: 5px; }
-
-/* ─── 알림 ─── */
-div[data-testid="stAlert"] { border-radius: 12px !important; }
-
-/* ─── Success/Warning ─── */
-.stSuccess { border-radius: 12px !important; }
-
-/* ─── 섹션 타이틀 ─── */
-.sec-title { font-size: 20px; font-weight: 800; color: #191F28; margin: 0 0 4px 0; letter-spacing: -0.4px; }
-.sec-sub { font-size: 14px; color: #8B95A1; margin: 0 0 20px 0; }
-
-/* ─── 빈 상태 ─── */
-.empty-state {
-    text-align: center; padding: 52px 0; color: #8B95A1;
-}
-.empty-icon { font-size: 44px; margin-bottom: 12px; }
-.empty-title { font-size: 16px; font-weight: 700; color: #4E5968; margin-bottom: 6px; }
-.empty-sub { font-size: 13px; }
-
-/* ─── 토스트 메시지 ─── */
-div[data-testid="stToast"] { border-radius: 14px !important; }
-
-/* ─── 게임 배지 ─── */
-.game-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 5px 13px; border-radius: 999px; font-size: 12px; font-weight: 700;
-}
-.live { background: #FEF2F2; color: #EF4444; border: 1px solid #FCA5A5; }
-.live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #EF4444; animation: blink 1.4s infinite; display: inline-block; }
-.sched { background: #EFF6FF; color: #3B82F6; border: 1px solid #BFDBFE; }
-.done { background: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0; }
+*,*::before,*::after{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif!important;box-sizing:border-box}
+.stApp{background:#F2F4F7!important}
+.main .block-container{padding:1.5rem 2rem 5rem 2rem!important;max-width:1440px!important}
+header[data-testid="stHeader"]{background:transparent!important}
+section[data-testid="stSidebar"]{display:none!important}
+div[data-testid="stTabs"]>div:first-child>div[role="tablist"]{background:#fff!important;border-radius:18px!important;padding:7px!important;gap:4px!important;border:1px solid #E5E8EB!important;box-shadow:0 2px 12px rgba(0,0,0,.06)!important;margin-bottom:28px!important}
+div[data-testid="stTabs"] button[role="tab"]{border-radius:13px!important;padding:10px 22px!important;font-size:15px!important;font-weight:600!important;color:#6B7684!important;border:none!important;background:transparent!important;transition:all .25s!important}
+div[data-testid="stTabs"] button[role="tab"][aria-selected="true"]{background:#3182F6!important;color:#fff!important;box-shadow:0 3px 12px rgba(49,130,246,.35)!important}
+div[data-testid="stTabs"] div[role="tabpanel"]{border:none!important;padding:0!important}
+.hero{background:linear-gradient(135deg,#0C2461 0%,#1E3799 40%,#3182F6 100%);border-radius:28px;padding:44px 52px;margin-bottom:32px;position:relative;overflow:hidden;box-shadow:0 16px 48px rgba(12,36,97,.35)}
+.hero::before{content:"⚾";position:absolute;right:52px;top:50%;transform:translateY(-50%);font-size:136px;opacity:.1;line-height:1}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.92);padding:5px 14px;border-radius:999px;font-size:13px;font-weight:600;margin-bottom:14px;border:1px solid rgba(255,255,255,.2)}
+.hero h1{color:#fff!important;font-size:36px!important;font-weight:800!important;margin:0 0 8px 0!important;letter-spacing:-1px!important}
+.hero-sub{color:rgba(255,255,255,.65)!important;font-size:16px!important;margin:0!important}
+.hero-live{display:inline-flex;align-items:center;gap:7px;background:rgba(239,68,68,.25);color:#FCA5A5;padding:5px 13px;border-radius:999px;font-size:12px;font-weight:700;margin-top:14px;border:1px solid rgba(239,68,68,.4)}
+.ldot{width:7px;height:7px;border-radius:50%;background:#EF4444;animation:blink 1.4s infinite;display:inline-block}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.card{background:#fff;border-radius:20px;padding:24px;border:1px solid #F0F2F5;box-shadow:0 2px 12px rgba(0,0,0,.04);margin-bottom:20px;transition:box-shadow .2s,transform .2s}
+.card:hover{box-shadow:0 6px 28px rgba(0,0,0,.09);transform:translateY(-1px)}
+.card-title{font-size:17px;font-weight:700;color:#191F28;margin:0 0 18px 0;display:flex;align-items:center;gap:8px;letter-spacing:-.3px}
+.rank-table{width:100%;border-collapse:collapse}
+.rank-table th{background:#F8F9FB;color:#8B95A1;font-weight:600;padding:9px 6px;text-align:center;font-size:11px;letter-spacing:.3px;border-bottom:2px solid #F0F2F5}
+.rank-table td{padding:11px 6px;text-align:center;color:#333D4B;border-bottom:1px solid #F8F9FA;font-size:13px}
+.rank-table tr.hl td{background:linear-gradient(90deg,#EFF6FF,#F0F9FF);color:#1D4ED8;font-weight:700}
+.rank-table tr:last-child td{border-bottom:none}
+.rnum{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:700}
+.rnum-1{background:#FEF3C7;color:#D97706}.rnum-2{background:#F1F5F9;color:#64748B}.rnum-3{background:#FFF3E0;color:#D4580A}.rnum-n{background:#F2F4F7;color:#6B7684}
+.game-card{background:white;border:1px solid #F0F2F5;border-radius:16px;padding:18px 20px;margin-bottom:10px;display:flex;align-items:center;gap:16px;transition:all .2s}
+.game-card:hover{border-color:#BFDBFE;box-shadow:0 4px 16px rgba(49,130,246,.09)}
+.game-card.lc{border-left:4px solid #EF4444}
+.score-box{background:#F8F9FA;border-radius:10px;padding:8px 18px;font-size:20px;font-weight:900;color:#191F28;letter-spacing:4px;text-align:center}
+.sb{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700}
+.sb-live{background:#FEF2F2;color:#EF4444;border:1px solid #FCA5A5}
+.sb-sched{background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE}
+.sb-done{background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0}
+.news-item{padding:13px 0;border-bottom:1px solid #F2F4F7;display:flex;align-items:flex-start;gap:12px}
+.news-item:last-child{border-bottom:none}
+.news-num{min-width:22px;height:22px;border-radius:6px;background:#F2F4F7;color:#8B95A1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:2px}
+.news-title a{font-size:14px;font-weight:600;color:#191F28;line-height:1.5;text-decoration:none}
+.news-title a:hover{color:#3182F6}
+.news-press{font-size:11px;color:#B0B8C1;font-weight:500;margin-top:3px}
+.yt-card{background:white;border:1px solid #F0F2F5;border-radius:16px;overflow:hidden;margin-bottom:14px;transition:all .2s;text-decoration:none;display:block}
+.yt-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.1);transform:translateY(-2px)}
+.yt-thumb{width:100%;aspect-ratio:16/9;object-fit:cover}
+.yt-info{padding:12px 14px}
+.yt-ttl{font-size:13px;font-weight:700;color:#191F28;line-height:1.5;margin-bottom:5px}
+.yt-meta{font-size:11px;color:#8B95A1;font-weight:500}
+.post-row{display:flex;align-items:center;gap:12px;padding:14px 16px;background:white;border:1px solid #F0F2F5;border-radius:14px;margin-bottom:8px;transition:all .2s}
+.post-row:hover{border-color:#BFDBFE;box-shadow:0 4px 16px rgba(49,130,246,.09);transform:translateY(-1px)}
+.cat-b{display:inline-flex;align-items:center;padding:3px 9px;border-radius:7px;font-size:11px;font-weight:700;white-space:nowrap}
+.cat-자유{background:#EFF6FF;color:#2563EB}.cat-응원{background:#FEF2F2;color:#DC2626}.cat-분석{background:#F0FDF4;color:#16A34A}.cat-질문{background:#FFF7ED;color:#EA580C}.cat-거래{background:#F5F3FF;color:#7C3AED}
+.post-ttl{font-size:14px;font-weight:600;color:#191F28;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.post-meta{display:flex;gap:10px;font-size:11px;color:#8B95A1;font-weight:500;white-space:nowrap;align-items:center}
+.vote-wrap{display:flex;height:52px;border-radius:14px;overflow:hidden;background:#F2F4F7;margin:10px 0}
+.vote-l{background:linear-gradient(90deg,#B91C1C,#EF4444);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px}
+.vote-o{background:linear-gradient(90deg,#1D4ED8,#3B82F6);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;flex:1}
+.stat-box{background:#F8F9FA;border-radius:14px;padding:18px 16px;text-align:center}
+.stat-val{font-size:30px;font-weight:800;color:#191F28;line-height:1}
+.stat-lbl{font-size:12px;color:#8B95A1;font-weight:600;margin-top:5px}
+.vtag{display:inline-flex;align-items:center;gap:4px;background:#F2F4F7;color:#333D4B;border-radius:8px;padding:5px 11px;font-size:12px;font-weight:700;margin:3px}
+.hr{border:none;border-top:1px solid #F0F2F5;margin:18px 0}
+.empty{text-align:center;padding:40px 0;color:#8B95A1}
+.empty-i{font-size:40px;margin-bottom:10px}
+.empty-t{font-size:15px;font-weight:700;color:#4E5968;margin-bottom:5px}
+.empty-s{font-size:13px}
+.post-detail{background:white;border-radius:20px;padding:32px;border:1px solid #F0F2F5;box-shadow:0 2px 12px rgba(0,0,0,.04);margin-bottom:12px}
+.cmt{padding:14px 0;border-bottom:1px solid #F8F9FA}
+.cmt:last-child{border-bottom:none}
+div[data-testid="stButton"] button{border-radius:12px!important;font-weight:700!important;font-size:14px!important;transition:all .2s!important}
+div[data-testid="stButton"] button:hover{transform:translateY(-2px)!important;box-shadow:0 6px 20px rgba(0,0,0,.12)!important}
+div[data-testid="stTextInput"] input,div[data-testid="stTextArea"] textarea{border:2px solid #E5E8EB!important;border-radius:12px!important;font-size:14px!important;background:#FAFBFC!important;transition:border-color .2s!important}
+div[data-testid="stTextInput"] input:focus,div[data-testid="stTextArea"] textarea:focus{border-color:#3182F6!important;box-shadow:0 0 0 4px rgba(49,130,246,.1)!important;background:white!important}
+div[data-testid="stLinkButton"] a{border-radius:12px!important;font-weight:700!important}
+div[data-testid="stAlert"]{border-radius:12px!important}
 </style>
 """, unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════
-#  Supabase 초기화
-# ══════════════════════════════════════════
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-
+# ── Supabase
 @st.cache_resource
 def get_sb():
     try:
         from supabase import create_client
-        return create_client(SUPABASE_URL, SUPABASE_KEY)
+        return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
     except Exception:
         return None
 
 sb = get_sb()
 
-
-# ══════════════════════════════════════════
-#  세션 상태
-# ══════════════════════════════════════════
-_defaults = {
-    "board_view": "list",       # list | write | detail
-    "post_id": None,
-    "predict_done": False,
-}
-for k, v in _defaults.items():
+for k, v in {"board_view": "list", "post_id": None}.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-
-# ══════════════════════════════════════════
-#  유틸리티
-# ══════════════════════════════════════════
-def hash_pw(pw: str) -> str:
-    return hashlib.sha256(pw.encode()).hexdigest()
-
-def fmt_dt(ts: str, mode="short") -> str:
-    if not ts:
-        return ""
-    try:
-        d = dt.fromisoformat(ts.replace("Z", "+00:00"))
-        if mode == "short":
-            return d.strftime("%m.%d %H:%M")
-        return d.strftime("%Y.%m.%d %H:%M")
-    except Exception:
-        return ts[:16].replace("T", " ")
+HDR = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+    "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+}
 
 
 # ══════════════════════════════════════════
-#  데이터 함수
+#  스크래핑 함수
 # ══════════════════════════════════════════
-
-# ── KBO 순위 ──
 @st.cache_data(ttl=300)
 def get_standings():
     try:
-        url = "https://www.koreabaseball.com/Record/TeamRank/TeamRank.aspx"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        res = requests.get(url, headers=headers, timeout=10)
-        res.raise_for_status()
+        res = requests.get("https://www.koreabaseball.com/Record/TeamRank/TeamRank.aspx", headers=HDR, timeout=10)
         soup = BeautifulSoup(res.text, "html.parser")
         table = soup.select_one("table.tData")
         if not table:
             return None
         df = pd.read_html(str(table))[0]
-        rename = {"팀명": "팀"}
-        df = df.rename(columns=rename)
-        cols = [c for c in ["순위", "팀", "승", "패", "무", "승률", "게임차"] if c in df.columns]
+        if "팀명" in df.columns:
+            df = df.rename(columns={"팀명": "팀"})
+        cols = [c for c in ["순위","팀","승","패","무","승률","게임차"] if c in df.columns]
         return df[cols].reset_index(drop=True)
     except Exception:
         return None
 
 
-# ── 게시판 CRUD ──
-def _posts(category="전체"):
-    if not sb:
-        return []
+@st.cache_data(ttl=120)
+def get_today_games():
+    """KBO 오늘 경기 목록 — 여러 경로 시도"""
+    games = []
     try:
-        q = sb.table("lotte_posts").select("*").order("created_at", desc=True)
-        if category != "전체":
-            q = q.eq("category", category)
-        return q.execute().data or []
-    except Exception:
-        return []
+        # 경로 1: 게임센터 메인
+        res = requests.get("https://www.koreabaseball.com/Schedule/GameCenter/Main.aspx", headers=HDR, timeout=10)
+        soup = BeautifulSoup(res.text, "html.parser")
 
-def _post(pid):
-    if not sb:
-        return None
-    try:
-        return sb.table("lotte_posts").select("*").eq("id", str(pid)).single().execute().data
-    except Exception:
-        return None
+        # 선택자 시도 목록
+        selectors = [
+            ("div.game_lst li", ".team_away .team_name", ".team_home .team_name", ".score", ".time", ".stadium", ".state"),
+            (".ScheduleList li", ".away", ".home", ".score", ".time", ".place", ".state"),
+        ]
+        for sel, aw_s, hm_s, sc_s, ti_s, st_s, sta_s in selectors:
+            items = soup.select(sel)
+            if not items:
+                continue
+            for item in items:
+                aw = (item.select_one(aw_s) or item.select_one(".away")).get_text(strip=True) if item.select_one(aw_s) or item.select_one(".away") else ""
+                hm = (item.select_one(hm_s) or item.select_one(".home")).get_text(strip=True) if item.select_one(hm_s) or item.select_one(".home") else ""
+                sc = item.select_one(sc_s)
+                ti = item.select_one(ti_s)
+                stad = item.select_one(st_s)
+                sta = item.select_one(sta_s)
+                games.append({
+                    "away": aw, "home": hm,
+                    "score": sc.get_text(strip=True) if sc else "vs",
+                    "time": ti.get_text(strip=True) if ti else "",
+                    "stadium": stad.get_text(strip=True) if stad else "",
+                    "state": sta.get_text(strip=True) if sta else "",
+                    "is_lotte": "롯데" in aw or "롯데" in hm,
+                })
+            if games:
+                break
 
-def _create_post(title, content, author, pw, category):
-    if not sb:
-        return False
-    try:
-        sb.table("lotte_posts").insert({
-            "id": str(uuid.uuid4()),
-            "title": title,
-            "content": content,
-            "author": author or "익명",
-            "password": hash_pw(pw) if pw else "",
-            "category": category,
-            "views": 0,
-            "likes": 0,
-        }).execute()
-        return True
-    except Exception as e:
-        st.error(f"오류: {e}")
-        return False
-
-def _delete_post(pid, pw):
-    if not sb:
-        return False, "DB 연결 오류"
-    try:
-        post = _post(pid)
-        if not post:
-            return False, "게시글을 찾을 수 없습니다."
-        stored_pw = post.get("password", "")
-        if stored_pw and stored_pw != hash_pw(pw):
-            return False, "비밀번호가 맞지 않습니다."
-        sb.table("lotte_posts").delete().eq("id", str(pid)).execute()
-        return True, "삭제됐습니다."
-    except Exception as e:
-        return False, str(e)
-
-def _inc_views(pid):
-    if not sb:
-        return
-    try:
-        post = _post(pid)
-        if post:
-            sb.table("lotte_posts").update({"views": post.get("views", 0) + 1}).eq("id", str(pid)).execute()
+        # 경로 2: 테이블 파싱 fallback
+        if not games:
+            for table in soup.select("table"):
+                rows = table.select("tr")[1:]
+                for row in rows:
+                    cols = [td.get_text(strip=True) for td in row.select("td")]
+                    if len(cols) >= 4 and any(c for c in cols):
+                        games.append({
+                            "away": cols[1] if len(cols) > 1 else "",
+                            "home": cols[3] if len(cols) > 3 else "",
+                            "score": cols[2] if len(cols) > 2 else "vs",
+                            "time": cols[0] if cols else "",
+                            "stadium": cols[4] if len(cols) > 4 else "",
+                            "state": cols[5] if len(cols) > 5 else "",
+                            "is_lotte": any("롯데" in c for c in cols),
+                        })
+                if games:
+                    break
     except Exception:
         pass
+    return games
 
-def _like_post(pid):
-    if not sb:
-        return 0
+
+@st.cache_data(ttl=300)
+def get_lotte_news():
+    """Google News RSS로 롯데 자이언츠 뉴스"""
     try:
-        post = _post(pid)
-        if post:
-            nl = post.get("likes", 0) + 1
-            sb.table("lotte_posts").update({"likes": nl}).eq("id", str(pid)).execute()
-            return nl
+        url = "https://news.google.com/rss/search?q=롯데+자이언츠&hl=ko&gl=KR&ceid=KR:ko"
+        res = requests.get(url, headers=HDR, timeout=10)
+        res.raise_for_status()
+        root = ET.fromstring(res.text)
+        news = []
+        for item in root.findall(".//item")[:10]:
+            title_el  = item.find("title")
+            link_el   = item.find("link")
+            source_el = item.find("source")
+            pub_el    = item.find("pubDate")
+            title = re.sub(r'\s*-\s*[^-]+$', '', title_el.text or "").strip() if title_el is not None else ""
+            link  = link_el.text or "" if link_el is not None else ""
+            press = source_el.text or "" if source_el is not None else ""
+            pub   = (pub_el.text or "")[:16] if pub_el is not None else ""
+            if title:
+                news.append({"title": title, "url": link, "press": press, "pub": pub})
+        return news
     except Exception:
-        pass
-    return 0
-
-def _comments(pid):
-    if not sb:
         return []
+
+
+@st.cache_data(ttl=1800)
+def get_youtube_highlights():
+    """YouTube 검색에서 최신 롯데 하이라이트 동적으로 가져오기"""
     try:
-        return sb.table("lotte_comments").select("*").eq("post_id", str(pid)).order("created_at").execute().data or []
+        query = "롯데+자이언츠+하이라이트"
+        url = f"https://www.youtube.com/results?search_query={query}&sp=CAI%3D"
+        res = requests.get(url, headers=HDR, timeout=15)
+        res.raise_for_status()
+        match = re.search(r'ytInitialData\s*=\s*({.+?});\s*</script>', res.text)
+        if not match:
+            return []
+        data = json.loads(match.group(1))
+        sections = (data.get("contents", {})
+                        .get("twoColumnSearchResultsRenderer", {})
+                        .get("primaryContents", {})
+                        .get("sectionListRenderer", {})
+                        .get("contents", []))
+        videos = []
+        for section in sections:
+            for item in section.get("itemSectionRenderer", {}).get("contents", []):
+                vr = item.get("videoRenderer", {})
+                if not vr:
+                    continue
+                vid_id = vr.get("videoId", "")
+                title  = (vr.get("title", {}).get("runs") or [{}])[0].get("text", "")
+                ch     = (vr.get("ownerText", {}).get("runs") or [{}])[0].get("text", "")
+                pub    = vr.get("publishedTimeText", {}).get("simpleText", "")
+                thumbs = vr.get("thumbnail", {}).get("thumbnails", [])
+                thumb  = thumbs[-1].get("url", "") if thumbs else f"https://img.youtube.com/vi/{vid_id}/hqdefault.jpg"
+                if vid_id and title:
+                    videos.append({"id": vid_id, "title": title, "channel": ch, "time": pub, "thumb": thumb})
+                if len(videos) >= 4:
+                    return videos
+        return videos
     except Exception:
         return []
-
-def _add_comment(pid, author, content):
-    if not sb:
-        return False
-    try:
-        sb.table("lotte_comments").insert({
-            "id": str(uuid.uuid4()),
-            "post_id": str(pid),
-            "author": author or "익명",
-            "content": content,
-        }).execute()
-        return True
-    except Exception:
-        return False
-
-
-# ── 승부예측 ──
-def _today_votes():
-    if not sb:
-        return pd.DataFrame()
-    try:
-        res = sb.table("vote_predictions").select("*").eq("vote_date", today.isoformat()).execute()
-        return pd.DataFrame(res.data) if res.data else pd.DataFrame()
-    except Exception:
-        return pd.DataFrame()
-
-def _add_vote(nickname, team):
-    if not sb:
-        return False
-    try:
-        sb.table("vote_predictions").insert({
-            "id": str(uuid.uuid4()),
-            "nickname": nickname,
-            "selected_team": team,
-            "vote_date": today.isoformat(),
-        }).execute()
-        return True
-    except Exception:
-        return False
 
 
 # ══════════════════════════════════════════
-#  히어로 배너
+#  DB 유틸
+# ══════════════════════════════════════════
+def hash_pw(pw):
+    return hashlib.sha256(pw.encode()).hexdigest()
+
+def fmt_dt(ts, mode="short"):
+    if not ts: return ""
+    try:
+        d = dt.fromisoformat(ts.replace("Z", "+00:00"))
+        return d.strftime("%m.%d %H:%M") if mode == "short" else d.strftime("%Y.%m.%d %H:%M")
+    except Exception:
+        return str(ts)[:16].replace("T", " ")
+
+def _posts(cat="전체"):
+    if not sb: return []
+    try:
+        q = sb.table("lotte_posts").select("*").order("created_at", desc=True)
+        if cat != "전체": q = q.eq("category", cat)
+        return q.execute().data or []
+    except Exception: return []
+
+def _post(pid):
+    if not sb: return None
+    try: return sb.table("lotte_posts").select("*").eq("id", str(pid)).single().execute().data
+    except Exception: return None
+
+def _create_post(title, content, author, pw, cat):
+    if not sb: return False
+    try:
+        sb.table("lotte_posts").insert({
+            "id": str(uuid.uuid4()), "title": title, "content": content,
+            "author": author or "익명", "password": hash_pw(pw) if pw else "",
+            "category": cat, "views": 0, "likes": 0,
+        }).execute()
+        return True
+    except Exception as e:
+        st.error(f"등록 오류: {e}"); return False
+
+def _delete_post(pid, pw):
+    if not sb: return False, "DB 연결 오류"
+    try:
+        post = _post(pid)
+        if not post: return False, "게시글을 찾을 수 없습니다."
+        if post.get("password") and post["password"] != hash_pw(pw): return False, "비밀번호가 맞지 않습니다."
+        sb.table("lotte_posts").delete().eq("id", str(pid)).execute()
+        return True, "삭제됐습니다."
+    except Exception as e: return False, str(e)
+
+def _inc_views(pid):
+    if not sb: return
+    try:
+        p = _post(pid)
+        if p: sb.table("lotte_posts").update({"views": p.get("views", 0) + 1}).eq("id", str(pid)).execute()
+    except Exception: pass
+
+def _like_post(pid):
+    if not sb: return 0
+    try:
+        p = _post(pid)
+        if p:
+            nl = p.get("likes", 0) + 1
+            sb.table("lotte_posts").update({"likes": nl}).eq("id", str(pid)).execute()
+            return nl
+    except Exception: return 0
+
+def _comments(pid):
+    if not sb: return []
+    try: return sb.table("lotte_comments").select("*").eq("post_id", str(pid)).order("created_at").execute().data or []
+    except Exception: return []
+
+def _add_comment(pid, author, content):
+    if not sb: return False
+    try:
+        sb.table("lotte_comments").insert({"id": str(uuid.uuid4()), "post_id": str(pid), "author": author or "익명", "content": content}).execute()
+        return True
+    except Exception: return False
+
+def _today_votes():
+    if not sb: return pd.DataFrame()
+    try:
+        res = sb.table("vote_predictions").select("*").eq("vote_date", today.isoformat()).execute()
+        return pd.DataFrame(res.data) if res.data else pd.DataFrame()
+    except Exception: return pd.DataFrame()
+
+def _add_vote(nick, team):
+    if not sb: return False
+    try:
+        sb.table("vote_predictions").insert({"id": str(uuid.uuid4()), "nickname": nick, "selected_team": team, "vote_date": today.isoformat()}).execute()
+        return True
+    except Exception: return False
+
+
+# ══════════════════════════════════════════
+#  히어로
 # ══════════════════════════════════════════
 st.markdown(f"""
 <div class="hero">
     <div class="hero-eyebrow">⚾ 비공식 팬 플랫폼</div>
     <h1>부산갈매기</h1>
     <p class="hero-sub">롯데 자이언츠 팬들이 모이는 곳 · {today.strftime('%Y년 %m월 %d일')}</p>
-    <div class="hero-live">LIVE 경기 정보 실시간 업데이트 중</div>
+    <div class="hero-live"><span class="ldot"></span>경기 정보 실시간 업데이트 중</div>
 </div>
 """, unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════
-#  탭 네비게이션
-# ══════════════════════════════════════════
-t_home, t_game, t_board, t_predict = st.tabs([
-    "🏠  홈",
-    "⚾  경기",
-    "📋  게시판",
-    "🎯  승부예측",
-])
+t_home, t_game, t_board, t_predict = st.tabs(["🏠  홈", "⚾  경기", "📋  게시판", "🎯  승부예측"])
 
 
-# ════════════════════════════════════════════════════════════
-#  🏠 홈 탭
-# ════════════════════════════════════════════════════════════
+# ════════════════════════════════
+#  🏠 홈
+# ════════════════════════════════
 with t_home:
-    col_L, col_C, col_R = st.columns([1.3, 2.7, 1.5], gap="medium")
+    standings   = get_standings()
+    today_games = get_today_games()
+    news_list   = get_lotte_news()
+    highlights  = get_youtube_highlights()
+    votes       = _today_votes()
 
-    # ── 왼쪽: KBO 순위 ──
-    with col_L:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">🏆 KBO 리그 순위</div>', unsafe_allow_html=True)
+    cL, cC, cR = st.columns([1.4, 2.8, 1.5], gap="medium")
 
-        df = get_standings()
-        if df is not None:
+    with cL:
+        # 순위
+        st.markdown('<div class="card"><div class="card-title">🏆 KBO 리그 순위</div>', unsafe_allow_html=True)
+        if standings is not None:
             rows_html = ""
-            for _, row in df.iterrows():
-                rank = str(row.get("순위", ""))
-                is_lotte = "롯데" in str(row.get("팀", ""))
-                rn_cls = {"1": "rnum-1", "2": "rnum-2", "3": "rnum-3"}.get(rank, "rnum-n")
-                cells = f"""
-                    <td><span class="rnum {rn_cls}">{rank}</span></td>
-                    <td style="text-align:left;padding-left:6px;font-weight:{'800' if is_lotte else '500'}">{row.get("팀","")}</td>
-                    <td>{row.get("승","")}</td>
-                    <td>{row.get("패","")}</td>
-                    <td>{row.get("승률","")}</td>
-                    <td style="color:#8B95A1">{row.get("게임차","")}</td>
-                """
-                rows_html += f'<tr class="{"hl" if is_lotte else ""}">{cells}</tr>'
-            st.markdown(f"""
-            <table class="rank-table">
-                <thead>
-                    <tr>
-                        <th>순위</th><th style="text-align:left;padding-left:6px">팀</th>
-                        <th>승</th><th>패</th><th>승률</th><th>게임차</th>
-                    </tr>
-                </thead>
-                <tbody>{rows_html}</tbody>
-            </table>
-            """, unsafe_allow_html=True)
+            for _, row in standings.iterrows():
+                rank = str(row.get("순위",""))
+                is_l = "롯데" in str(row.get("팀",""))
+                rc = {"1":"rnum-1","2":"rnum-2","3":"rnum-3"}.get(rank,"rnum-n")
+                rows_html += f'<tr class="{"hl" if is_l else ""}"><td><span class="rnum {rc}">{rank}</span></td><td style="text-align:left;padding-left:6px;font-weight:{"800" if is_l else "500"}">{row.get("팀","")}</td><td>{row.get("승","")}</td><td>{row.get("패","")}</td><td>{row.get("승률","")}</td><td style="color:#8B95A1">{row.get("게임차","")}</td></tr>'
+            st.markdown(f'<table class="rank-table"><thead><tr><th>순위</th><th style="text-align:left;padding-left:6px">팀</th><th>승</th><th>패</th><th>승률</th><th>게임차</th></tr></thead><tbody>{rows_html}</tbody></table>', unsafe_allow_html=True)
         else:
-            st.markdown("""
-            <div class="empty-state">
-                <div class="empty-icon">📡</div>
-                <div class="empty-title">순위를 불러올 수 없어요</div>
-                <div class="empty-sub">잠시 후 다시 시도해주세요</div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown('<div class="empty"><div class="empty-i">📡</div><div class="empty-t">순위 로딩 실패</div><div class="empty-s">새로고침 해주세요</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 오늘의 예측 미리보기
-        votes = _today_votes()
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">🎯 오늘의 예측 현황</div>', unsafe_allow_html=True)
-        if not votes.empty:
-            total = len(votes)
-            lotte_n = len(votes[votes["selected_team"] == "롯데"])
-            lotte_pct = round(lotte_n / total * 100, 1)
-            opp_pct = round(100 - lotte_pct, 1)
-            st.markdown(f"""
-            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:6px">
-                <span style="color:#EF4444">🔴 롯데 {lotte_pct}%</span>
-                <span style="color:#3B82F6">{opp_pct}% 상대팀 💙</span>
-            </div>
-            <div class="vote-bar-wrap">
-                <div class="vote-lotte" style="width:{lotte_pct}%">{"롯데" if lotte_pct>18 else ""}</div>
-                <div class="vote-opp">{"상대팀" if opp_pct>18 else ""}</div>
-            </div>
-            <p style="text-align:center;font-size:12px;color:#8B95A1;margin-top:8px;font-weight:600">
-                총 {total}명 참여 중
-            </p>
-            """, unsafe_allow_html=True)
+        # 예측 미리보기
+        st.markdown('<div class="card"><div class="card-title">🎯 오늘의 예측 현황</div>', unsafe_allow_html=True)
+        tv = len(votes)
+        if not votes.empty and tv > 0:
+            ln = len(votes[votes["selected_team"]=="롯데"])
+            lp = round(ln/tv*100, 1); op = round(100-lp, 1)
+            st.markdown(f'<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:6px"><span style="color:#EF4444">🔴 롯데 {lp}%</span><span style="color:#3B82F6">{op}% 상대팀 💙</span></div><div class="vote-wrap"><div class="vote-l" style="width:{lp}%">{"롯데" if lp>18 else ""}</div><div class="vote-o">{"상대팀" if op>18 else ""}</div></div><p style="text-align:center;font-size:12px;color:#8B95A1;margin-top:8px;font-weight:600">총 {tv}명 참여 중</p>', unsafe_allow_html=True)
         else:
-            st.markdown("""
-            <div class="empty-state" style="padding:20px 0">
-                <div class="empty-icon">🗳️</div>
-                <div class="empty-title">아직 예측이 없어요</div>
-                <div class="empty-sub">승부예측 탭에서 투표하세요!</div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown('<div class="empty" style="padding:20px 0"><div class="empty-i">🗳️</div><div class="empty-t">아직 예측이 없어요</div><div class="empty-s">승부예측 탭에서 투표하세요!</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── 가운데: 경기 일정 + 뉴스 ──
-    with col_C:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">📅 KBO 경기 일정 & 결과</div>', unsafe_allow_html=True)
-        st.components.v1.iframe(
-            "https://sports.daum.net/schedule/kbo",
-            height=350, scrolling=False
-        )
+    with cC:
+        # 오늘 경기
+        st.markdown(f'<div class="card"><div class="card-title">📅 오늘의 KBO 경기 <span style="font-size:13px;color:#8B95A1;font-weight:500">· {today.strftime("%m/%d")}</span></div>', unsafe_allow_html=True)
+        if today_games:
+            for g in today_games:
+                aw, hm = g.get("away",""), g.get("home","")
+                sc = g.get("score","vs")
+                ti = g.get("time","")
+                stad = g.get("stadium","")
+                sta = g.get("state","")
+                is_l = g.get("is_lotte", False)
+                if "종료" in sta or "완료" in sta:
+                    bdg = '<span class="sb sb-done">종료</span>'
+                elif sta and sta not in ["-",""]:
+                    bdg = '<span class="sb sb-live"><span class="ldot" style="width:6px;height:6px"></span>진행중</span>'
+                else:
+                    bdg = f'<span class="sb sb-sched">{ti}</span>'
+                st.markdown(f'<div class="game-card {"lc" if is_l else ""}"><div style="flex:1"><div style="display:flex;align-items:center;justify-content:center;gap:16px"><span style="font-size:15px;font-weight:{"900" if is_l else "600"};color:#191F28;min-width:64px;text-align:right">{aw}</span><span class="score-box">{sc}</span><span style="font-size:15px;font-weight:{"900" if is_l else "600"};color:#191F28;min-width:64px">{hm}</span></div><div style="text-align:center;margin-top:8px;display:flex;gap:8px;justify-content:center;align-items:center">{bdg}<span style="font-size:12px;color:#B0B8C1">{stad}</span></div></div></div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="empty" style="padding:28px 0"><div class="empty-i">🌙</div><div class="empty-t">오늘은 경기가 없어요</div><div class="empty-s">내일을 기대해봐요!</div></div>', unsafe_allow_html=True)
+        st.link_button("📋 전체 경기 일정", "https://www.giantsclub.com/html/?pcode=257", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">📰 롯데 자이언츠 최신 뉴스</div>', unsafe_allow_html=True)
-        st.components.v1.iframe(
-            "https://sports.daum.net/team/kbo/386/news",
-            height=340, scrolling=True
-        )
+        # 뉴스
+        st.markdown('<div class="card"><div class="card-title">📰 롯데 자이언츠 최신 뉴스</div>', unsafe_allow_html=True)
+        if news_list:
+            for i, n in enumerate(news_list[:8], 1):
+                st.markdown(f'<div class="news-item"><span class="news-num">{i}</span><div style="flex:1"><div class="news-title"><a href="{n["url"]}" target="_blank">{n["title"]}</a></div><div class="news-press">{n.get("press","")} · {n.get("pub","")}</div></div></div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="empty" style="padding:24px 0"><div class="empty-i">📡</div><div class="empty-t">뉴스를 불러오지 못했어요</div></div>', unsafe_allow_html=True)
+        st.link_button("🔗 네이버 스포츠 뉴스", "https://sports.news.naver.com/kbaseball/news/index?type=team&teamCode=LT", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── 오른쪽: 하이라이트 + 예매 ──
-    with col_R:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">🎬 최근 하이라이트</div>', unsafe_allow_html=True)
-        st.markdown("**롯데 vs 삼성**")
-        st.video("https://youtu.be/VToF__mooJs?si=ViJYOvBfV0RTiduD")
-        st.markdown("<br>**롯데 주간 플레이**")
-        st.video("https://youtu.be/zNFLJ5o_Sfg?si=GoCT-3TPuiqStHGP")
+    with cR:
+        # 하이라이트
+        st.markdown('<div class="card"><div class="card-title">🎬 최신 하이라이트</div>', unsafe_allow_html=True)
+        if highlights:
+            for v in highlights[:2]:
+                vid = v["id"]
+                thumb = v.get("thumb") or f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
+                st.markdown(f'<a class="yt-card" href="https://www.youtube.com/watch?v={vid}" target="_blank"><img class="yt-thumb" src="{thumb}" onerror="this.src=\'https://img.youtube.com/vi/{vid}/hqdefault.jpg\'" alt=""><div class="yt-info"><div class="yt-ttl">{v.get("title","")[:52]}</div><div class="yt-meta">{v.get("channel","")} · {v.get("time","")}</div></div></a>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="empty" style="padding:20px 0"><div class="empty-i">🎬</div><div class="empty-t">영상 로딩 실패</div></div>', unsafe_allow_html=True)
+        st.link_button("▶ YouTube 더보기", "https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">🎟️ 티켓 예매</div>', unsafe_allow_html=True)
-        st.markdown("""
-        <p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.7">
-            일반 예매 오픈:<br>
-            경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong>
-        </p>
-        """, unsafe_allow_html=True)
+        # 예매
+        st.markdown('<div class="card"><div class="card-title">🎟️ 티켓 예매</div><p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.7">일반 예매 오픈:<br>경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong></p>', unsafe_allow_html=True)
         st.link_button("🎫 예매 페이지", "https://ticket.giantsclub.com/loginForm.do", use_container_width=True)
         st.link_button("📋 시즌 일정", "https://www.giantsclub.com/html/?pcode=257", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ════════════════════════════════════════════════════════════
-#  ⚾ 경기 탭
-# ════════════════════════════════════════════════════════════
+# ════════════════════════════════
+#  ⚾ 경기
+# ════════════════════════════════
 with t_game:
-    gc1, gc2 = st.columns([3, 2], gap="medium")
+    tg = get_today_games()
+    hl = get_youtube_highlights()
+    lotte_g = [g for g in tg if g.get("is_lotte")]
 
+    gc1, gc2 = st.columns([3, 2], gap="medium")
     with gc1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("""
-        <div class="card-title">🎮 실시간 게임센터 & 문자중계
-            <span class="game-badge live">LIVE</span>
-        </div>
-        <p style="font-size:13px;color:#8B95A1;margin-bottom:14px">
-            경기 중에는 실시간 문자중계를 확인할 수 있습니다.
-        </p>
-        """, unsafe_allow_html=True)
-        st.components.v1.iframe(
-            "https://sports.daum.net/match/80090756",
-            height=620, scrolling=True
-        )
+        st.markdown('<div class="card"><div class="card-title">⚾ 오늘 롯데 자이언츠 경기</div>', unsafe_allow_html=True)
+        if lotte_g:
+            g = lotte_g[0]
+            aw, hm = g.get("away",""), g.get("home","")
+            sc = g.get("score","vs"); ti = g.get("time",""); stad = g.get("stadium",""); sta = g.get("state","")
+            is_live = sta and "종료" not in sta and sta not in ["-",""]
+            sbdg = '<span class="sb sb-live"><span class="ldot" style="width:6px;height:6px"></span>진행중</span>' if is_live else f'<span class="sb sb-sched">{ti}</span>'
+            st.markdown(f'<div style="background:linear-gradient(135deg,#EFF6FF,#F0F9FF);border-radius:18px;padding:28px;text-align:center;margin-bottom:18px"><div style="margin-bottom:12px">{sbdg}</div><div style="display:flex;align-items:center;justify-content:center;gap:24px"><div><div style="font-size:24px;font-weight:900;color:#191F28">{aw}</div><div style="font-size:12px;color:#8B95A1;margin-top:3px">원정</div></div><div style="font-size:36px;font-weight:900;color:#191F28;letter-spacing:6px;padding:12px 24px;background:white;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06)">{sc}</div><div><div style="font-size:24px;font-weight:900;color:#191F28">{hm}</div><div style="font-size:12px;color:#8B95A1;margin-top:3px">홈</div></div></div><div style="margin-top:14px;font-size:13px;color:#8B95A1;font-weight:600">🏟️ {stad}</div></div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="empty" style="padding:32px 0"><div class="empty-i">🌙</div><div class="empty-t">오늘 롯데 경기 없음</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">📅 월간 경기 일정</div>', unsafe_allow_html=True)
-        st.components.v1.iframe(
-            "https://sports.daum.net/schedule/kbo",
-            height=380, scrolling=False
-        )
+        st.markdown('<div class="card"><div class="card-title">📡 실시간 문자 중계 <span class="sb sb-live" style="font-size:11px;padding:3px 9px"><span class="ldot" style="width:6px;height:6px"></span>LIVE</span></div><p style="font-size:13px;color:#8B95A1;margin-bottom:14px">경기 중일 때 실시간 중계를 확인할 수 있습니다</p>', unsafe_allow_html=True)
+        st.components.v1.iframe("https://sports.daum.net/match/80090756", height=500, scrolling=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with gc2:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">🎬 하이라이트 영상</div>', unsafe_allow_html=True)
-        st.markdown("**▷ 롯데 vs 삼성 하이라이트**")
-        st.video("https://youtu.be/VToF__mooJs?si=ViJYOvBfV0RTiduD")
-        st.markdown("<br>**▷ 롯데 주간 베스트 플레이**")
-        st.video("https://youtu.be/zNFLJ5o_Sfg?si=GoCT-3TPuiqStHGP")
+        st.markdown('<div class="card"><div class="card-title">📋 오늘 전체 경기</div>', unsafe_allow_html=True)
+        if tg:
+            for g in tg:
+                aw, hm = g.get("away",""), g.get("home","")
+                sc = g.get("score","vs"); sta = g.get("state",""); is_l = g.get("is_lotte",False)
+                st.markdown(f'<div class="game-card {"lc" if is_l else ""}" style="padding:13px 16px"><div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="font-size:14px;font-weight:{"800" if is_l else "600"};color:#191F28;min-width:48px;text-align:right">{aw}</span><span style="background:#F8F9FA;border-radius:8px;padding:6px 14px;font-size:16px;font-weight:900;color:#191F28;letter-spacing:3px">{sc}</span><span style="font-size:14px;font-weight:{"800" if is_l else "600"};color:#191F28;min-width:48px">{hm}</span><span style="font-size:11px;color:#8B95A1">{sta}</span></div></div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="empty" style="padding:24px 0"><div class="empty-i">📅</div><div class="empty-t">오늘은 경기가 없어요</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">🏟️ 사직구장 & 예매</div>', unsafe_allow_html=True)
-        st.markdown("""
-        <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;color:#4E5968;margin-bottom:16px">
-            <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #F0F2F5">
-                <span style="color:#8B95A1;font-weight:600">위치</span>
-                <span style="font-weight:700">부산광역시 동래구</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #F0F2F5">
-                <span style="color:#8B95A1;font-weight:600">수용 인원</span>
-                <span style="font-weight:700">약 24,000명</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:10px 0">
-                <span style="color:#8B95A1;font-weight:600">예매 오픈</span>
-                <span style="font-weight:700;color:#3182F6">경기 1주 전 14:00</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        st.link_button("🎫 티켓 예매", "https://ticket.giantsclub.com/loginForm.do", use_container_width=True)
+        st.markdown('<div class="card"><div class="card-title">🎬 최신 하이라이트</div>', unsafe_allow_html=True)
+        if hl:
+            for v in hl[:3]:
+                vid = v["id"]; thumb = v.get("thumb") or f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
+                st.markdown(f'<a href="https://www.youtube.com/watch?v={vid}" target="_blank" style="text-decoration:none"><div class="game-card" style="padding:12px"><img src="{thumb}" style="width:110px;height:66px;object-fit:cover;border-radius:8px;flex-shrink:0" onerror="this.src=\'https://img.youtube.com/vi/{vid}/hqdefault.jpg\'" alt=""><div><div style="font-size:12px;font-weight:700;color:#191F28;line-height:1.5">{v.get("title","")[:46]}</div><div style="font-size:11px;color:#8B95A1;margin-top:3px">{v.get("channel","")} · {v.get("time","")}</div></div></div></a>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="empty" style="padding:20px 0"><div class="empty-i">🎬</div><div class="empty-t">영상을 불러오지 못했어요</div></div>', unsafe_allow_html=True)
+        st.link_button("▶ YouTube 더보기", "https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ════════════════════════════════════════════════════════════
-#  📋 게시판 탭
-# ════════════════════════════════════════════════════════════
+# ════════════════════════════════
+#  📋 게시판
+# ════════════════════════════════
 with t_board:
-    CATS = ["자유", "응원", "분석", "질문", "거래"]
-
+    CATS = ["자유","응원","분석","질문","거래"]
     bv = st.session_state.board_view
 
-    # ── 목록 ──
     if bv == "list":
-        hc1, hc2 = st.columns([8, 2])
+        hc1, hc2 = st.columns([8,2])
         with hc1:
-            st.markdown(f"""
-            <p class="sec-title">📋 팬 게시판</p>
-            <p class="sec-sub">롯데 자이언츠 팬들과 이야기를 나눠보세요</p>
-            """, unsafe_allow_html=True)
+            st.markdown('<p style="font-size:20px;font-weight:800;color:#191F28;margin:0 0 4px">📋 팬 게시판</p><p style="font-size:14px;color:#8B95A1;margin:0 0 20px">롯데 자이언츠 팬들과 이야기를 나눠보세요</p>', unsafe_allow_html=True)
         with hc2:
             if st.button("✏️  글쓰기", type="primary", use_container_width=True):
-                st.session_state.board_view = "write"
-                st.rerun()
-
-        fc1, fc2 = st.columns([3, 9])
+                st.session_state.board_view = "write"; st.rerun()
+        fc1, _ = st.columns([2,8])
         with fc1:
-            cat_filter = st.selectbox(
-                "카테고리", ["전체"] + CATS,
-                label_visibility="collapsed"
-            )
-
-        posts = _posts(cat_filter)
-
+            cf = st.selectbox("", ["전체"]+CATS, label_visibility="collapsed")
+        posts = _posts(cf)
         if not sb:
-            st.warning("⚠️ Supabase 연결이 필요합니다. `supabase_schema.sql`을 실행하고 설정을 확인하세요.")
+            st.warning("⚠️ Supabase 연결이 필요합니다. `.streamlit/secrets.toml`을 설정하세요.")
         elif not posts:
-            st.markdown("""
-            <div class="empty-state">
-                <div class="empty-icon">📝</div>
-                <div class="empty-title">아직 게시글이 없어요</div>
-                <div class="empty-sub">첫 번째 글을 작성해보세요!</div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown('<div class="empty"><div class="empty-i">📝</div><div class="empty-t">아직 게시글이 없어요</div><div class="empty-s">첫 번째 글을 작성해보세요!</div></div>', unsafe_allow_html=True)
         else:
             for p in posts:
-                pc1, pc2 = st.columns([13, 1])
+                cat = p.get("category","자유")
+                pc1, pc2 = st.columns([13,1])
                 with pc1:
-                    cat = p.get("category", "자유")
-                    st.markdown(f"""
-                    <div class="post-row">
-                        <span class="cat-badge {cat}">{cat}</span>
-                        <span class="post-title-txt">{p.get("title","")}</span>
-                        <div class="post-meta-txt">
-                            <span>✍️ {p.get("author","익명")}</span>
-                            <span>👁 {p.get("views",0)}</span>
-                            <span>❤️ {p.get("likes",0)}</span>
-                            <span>🕐 {fmt_dt(p.get("created_at",""))}</span>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f'<div class="post-row"><span class="cat-b cat-{cat}">{cat}</span><span class="post-ttl">{p.get("title","")}</span><div class="post-meta"><span>✍️ {p.get("author","익명")}</span><span>👁 {p.get("views",0)}</span><span>❤️ {p.get("likes",0)}</span><span>🕐 {fmt_dt(p.get("created_at",""))}</span></div></div>', unsafe_allow_html=True)
                 with pc2:
                     if st.button("읽기", key=f"r_{p['id']}", use_container_width=True):
-                        st.session_state.board_view = "detail"
-                        st.session_state.post_id = p["id"]
-                        _inc_views(p["id"])
-                        st.rerun()
+                        st.session_state.board_view = "detail"; st.session_state.post_id = p["id"]; _inc_views(p["id"]); st.rerun()
 
-    # ── 글쓰기 ──
     elif bv == "write":
-        if st.button("← 목록으로 돌아가기"):
-            st.session_state.board_view = "list"
-            st.rerun()
-
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">✏️ 새 게시글 작성</div>', unsafe_allow_html=True)
-
-        wc1, wc2 = st.columns([3, 1])
-        with wc1:
-            w_title = st.text_input("제목 *", placeholder="제목을 입력하세요")
-        with wc2:
-            w_cat = st.selectbox("카테고리", CATS)
-
+        if st.button("← 목록으로"):
+            st.session_state.board_view = "list"; st.rerun()
+        st.markdown('<div class="card"><div class="card-title">✏️ 새 게시글 작성</div>', unsafe_allow_html=True)
+        wc1, wc2 = st.columns([3,1])
+        with wc1: wt = st.text_input("제목 *", placeholder="제목을 입력하세요")
+        with wc2: wcat = st.selectbox("카테고리", CATS)
         ac1, ac2 = st.columns(2)
-        with ac1:
-            w_author = st.text_input("닉네임", placeholder="닉네임 (미입력 시 익명)")
-        with ac2:
-            w_pw = st.text_input("비밀번호 (삭제용)", type="password", placeholder="나중에 삭제할 때 필요")
-
-        w_content = st.text_area("내용 *", placeholder="내용을 입력하세요...", height=260)
-
-        bc1, bc2, _ = st.columns([2, 2, 6])
+        with ac1: wa = st.text_input("닉네임", placeholder="미입력 시 익명")
+        with ac2: wpw = st.text_input("삭제 비밀번호", type="password", placeholder="삭제할 때 필요")
+        wc = st.text_area("내용 *", placeholder="내용을 입력하세요...", height=260)
+        bc1, bc2, _ = st.columns([2,2,6])
         with bc1:
             if st.button("게시하기 →", type="primary", use_container_width=True):
-                if not w_title.strip():
-                    st.warning("제목을 입력해주세요.")
-                elif not w_content.strip():
-                    st.warning("내용을 입력해주세요.")
-                elif _create_post(w_title.strip(), w_content.strip(), w_author.strip(), w_pw, w_cat):
-                    st.success("✅ 게시글이 등록됐습니다!")
-                    st.session_state.board_view = "list"
-                    st.rerun()
-                else:
-                    st.error("등록에 실패했습니다. 잠시 후 다시 시도해주세요.")
+                if not wt.strip(): st.warning("제목을 입력해주세요.")
+                elif not wc.strip(): st.warning("내용을 입력해주세요.")
+                elif _create_post(wt.strip(), wc.strip(), wa.strip(), wpw, wcat):
+                    st.success("✅ 게시글이 등록됐습니다!"); st.session_state.board_view = "list"; st.rerun()
         with bc2:
             if st.button("취소", use_container_width=True):
-                st.session_state.board_view = "list"
-                st.rerun()
-
+                st.session_state.board_view = "list"; st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── 상세 보기 ──
     elif bv == "detail":
-        if st.button("← 목록으로 돌아가기"):
-            st.session_state.board_view = "list"
-            st.session_state.post_id = None
-            st.rerun()
-
+        if st.button("← 목록으로"):
+            st.session_state.board_view = "list"; st.session_state.post_id = None; st.rerun()
         post = _post(st.session_state.post_id)
-
         if not post:
             st.error("게시글을 찾을 수 없습니다.")
         else:
-            cat = post.get("category", "자유")
-            st.markdown(f"""
-            <div class="post-detail-box">
-                <div style="margin-bottom:14px">
-                    <span class="cat-badge {cat}">{cat}</span>
-                </div>
-                <h2 style="font-size:24px;font-weight:800;color:#191F28;margin:0 0 14px;letter-spacing:-0.5px">
-                    {post.get("title","")}
-                </h2>
-                <div style="display:flex;gap:18px;font-size:13px;color:#8B95A1;font-weight:500;margin-bottom:24px;flex-wrap:wrap">
-                    <span>✍️ <strong style="color:#4E5968">{post.get("author","익명")}</strong></span>
-                    <span>📅 {fmt_dt(post.get("created_at",""), "long")}</span>
-                    <span>👁 {post.get("views",0)} 조회</span>
-                    <span>❤️ {post.get("likes",0)} 좋아요</span>
-                </div>
-                <div class="toss-hr"></div>
-                <div style="font-size:16px;color:#333D4B;line-height:1.85;white-space:pre-wrap;word-break:break-word">
-{post.get("content","")}
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # 좋아요 & 삭제
-            act1, act2, act3 = st.columns([2, 2, 8])
-            with act1:
-                if st.button(f"❤️  좋아요 ({post.get('likes',0)})", use_container_width=True):
-                    _like_post(st.session_state.post_id)
-                    st.rerun()
-            with act2:
-                with st.expander("🗑️  삭제"):
+            cat = post.get("category","자유")
+            st.markdown(f'<div class="post-detail"><span class="cat-b cat-{cat}" style="margin-bottom:14px;display:inline-block">{cat}</span><h2 style="font-size:24px;font-weight:800;color:#191F28;margin:0 0 14px;letter-spacing:-.5px">{post.get("title","")}</h2><div style="display:flex;gap:18px;font-size:13px;color:#8B95A1;font-weight:500;margin-bottom:24px;flex-wrap:wrap"><span>✍️ <strong style="color:#4E5968">{post.get("author","익명")}</strong></span><span>📅 {fmt_dt(post.get("created_at",""),"long")}</span><span>👁 {post.get("views",0)}</span><span>❤️ {post.get("likes",0)}</span></div><div class="hr"></div><div style="font-size:16px;color:#333D4B;line-height:1.85;white-space:pre-wrap;word-break:break-word">{post.get("content","")}</div></div>', unsafe_allow_html=True)
+            a1, a2, _ = st.columns([2,2,8])
+            with a1:
+                if st.button(f"❤️ 좋아요 ({post.get('likes',0)})", use_container_width=True):
+                    _like_post(st.session_state.post_id); st.rerun()
+            with a2:
+                with st.expander("🗑️ 삭제"):
                     dp = st.text_input("삭제 비밀번호", type="password", key="dpw")
-                    if st.button("삭제 확인", key="del_btn"):
+                    if st.button("삭제 확인"):
                         ok, msg = _delete_post(st.session_state.post_id, dp)
-                        if ok:
-                            st.session_state.board_view = "list"
-                            st.session_state.post_id = None
-                            st.rerun()
-                        else:
-                            st.error(msg)
-
-            # 댓글
-            comments = _comments(st.session_state.post_id)
-            st.markdown('<div class="card" style="margin-top:14px">', unsafe_allow_html=True)
-            st.markdown(f'<div class="card-title">💬 댓글 {len(comments)}개</div>', unsafe_allow_html=True)
-
-            if comments:
-                for c in comments:
-                    st.markdown(f"""
-                    <div class="comment-box">
-                        <div style="margin-bottom:5px">
-                            <span style="font-size:14px;font-weight:700;color:#333D4B">{c.get("author","익명")}</span>
-                            <span style="font-size:12px;color:#B0B8C1;margin-left:8px">{fmt_dt(c.get("created_at",""))}</span>
-                        </div>
-                        <div style="font-size:14px;color:#4E5968;line-height:1.65;word-break:break-word">{c.get("content","")}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                <p style="text-align:center;color:#8B95A1;font-size:14px;padding:16px 0">
-                    첫 댓글을 남겨보세요! 💬
-                </p>
-                """, unsafe_allow_html=True)
-
-            st.markdown('<div class="toss-hr"></div>', unsafe_allow_html=True)
-            cc1, cc2 = st.columns([1, 3])
-            with cc1:
-                c_author = st.text_input("닉네임", placeholder="익명", key="ca")
-            with cc2:
-                c_content = st.text_input("댓글을 입력하세요", placeholder="Enter로 등록", key="cc")
-
+                        if ok: st.session_state.board_view="list"; st.session_state.post_id=None; st.rerun()
+                        else: st.error(msg)
+            cmts = _comments(st.session_state.post_id)
+            st.markdown(f'<div class="card" style="margin-top:14px"><div class="card-title">💬 댓글 {len(cmts)}개</div>', unsafe_allow_html=True)
+            for c in cmts:
+                st.markdown(f'<div class="cmt"><span style="font-size:14px;font-weight:700;color:#333D4B">{c.get("author","익명")}</span><span style="font-size:12px;color:#B0B8C1;margin-left:8px">{fmt_dt(c.get("created_at",""))}</span><div style="font-size:14px;color:#4E5968;line-height:1.65;margin-top:5px;word-break:break-word">{c.get("content","")}</div></div>', unsafe_allow_html=True)
+            if not cmts:
+                st.markdown('<p style="text-align:center;color:#8B95A1;font-size:14px;padding:16px 0">첫 댓글을 남겨보세요! 💬</p>', unsafe_allow_html=True)
+            st.markdown('<div class="hr"></div>', unsafe_allow_html=True)
+            cc1, cc2 = st.columns([1,3])
+            with cc1: ca = st.text_input("닉네임", placeholder="익명", key="ca")
+            with cc2: cc = st.text_input("댓글을 입력하세요", key="cc")
             if st.button("댓글 등록", type="primary"):
-                if c_content.strip():
-                    _add_comment(st.session_state.post_id, c_author.strip(), c_content.strip())
-                    st.rerun()
-                else:
-                    st.warning("댓글 내용을 입력해주세요.")
+                if cc.strip(): _add_comment(st.session_state.post_id, ca.strip(), cc.strip()); st.rerun()
+                else: st.warning("댓글 내용을 입력해주세요.")
             st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ════════════════════════════════════════════════════════════
-#  🎯 승부예측 탭
-# ════════════════════════════════════════════════════════════
+# ════════════════════════════════
+#  🎯 승부예측
+# ════════════════════════════════
 with t_predict:
     votes = _today_votes()
-    total = len(votes) if not votes.empty else 0
-    lotte_n = len(votes[votes["selected_team"] == "롯데"]) if not votes.empty else 0
-    opp_n   = total - lotte_n
-    lotte_pct = round(lotte_n / total * 100, 1) if total > 0 else 50.0
-    opp_pct   = round(100 - lotte_pct, 1)
+    tp = len(votes)
+    ln = len(votes[votes["selected_team"]=="롯데"]) if not votes.empty else 0
+    on = tp - ln
+    lp = round(ln/tp*100, 1) if tp > 0 else 50.0
+    op = round(100-lp, 1)
 
-    pc1, pc2 = st.columns([5, 7], gap="medium")
-
+    pc1, pc2 = st.columns([5,7], gap="medium")
     with pc1:
-        # 투표 카드
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown(f"""
-        <div class="card-title">🎯 {today.strftime("%m월 %d일")} 오늘 경기 예측</div>
-        <div style="background:linear-gradient(135deg,#EFF6FF,#F0F9FF);border-radius:16px;padding:20px;text-align:center;margin-bottom:18px">
-            <div style="font-size:28px;margin-bottom:8px">🔴 롯데 <span style="color:#CBD5E1;font-size:20px">vs</span> 상대팀 💙</div>
-            <div style="font-size:13px;color:#6B7684;font-weight:600">오늘 경기에서 누가 이길까요?</div>
-        </div>
-        """, unsafe_allow_html=True)
-
+        st.markdown(f'<div class="card"><div class="card-title">🎯 {today.strftime("%m월 %d일")} 승부 예측</div><div style="background:linear-gradient(135deg,#EFF6FF,#F0F9FF);border-radius:16px;padding:20px;text-align:center;margin-bottom:18px"><div style="font-size:26px;margin-bottom:8px">🔴 롯데 <span style="color:#CBD5E1;font-size:18px">vs</span> 상대팀 💙</div><div style="font-size:13px;color:#6B7684;font-weight:600">오늘 경기 승자를 예측해보세요!</div></div>', unsafe_allow_html=True)
         if not sb:
             st.warning("⚠️ 데이터베이스 연결이 필요합니다.")
         else:
-            p_nick = st.text_input("닉네임 *", placeholder="닉네임을 입력하세요", key="pn")
-            p_team = st.radio(
-                "예측",
-                ["🔴 최강 롯데 자이언츠 이겨라!!", "💙 오늘은 상대팀"],
-                label_visibility="visible"
-            )
-
+            pn = st.text_input("닉네임 *", placeholder="닉네임을 입력하세요", key="pn")
+            pt = st.radio("예측", ["🔴 최강 롯데 자이언츠 이겨라!!", "💙 오늘은 상대팀"])
             if st.button("🎯  예측 제출하기", type="primary", use_container_width=True):
-                if not p_nick.strip():
-                    st.warning("닉네임을 입력해주세요.")
-                elif not votes.empty and p_nick.strip() in votes["nickname"].values:
-                    st.warning("이미 오늘 예측을 완료했어요! 내일 다시 도전하세요 😊")
+                if not pn.strip(): st.warning("닉네임을 입력해주세요.")
+                elif not votes.empty and pn.strip() in votes["nickname"].values: st.warning("이미 오늘 예측을 완료했어요! 😊")
                 else:
-                    team_val = "롯데" if "롯데" in p_team else "상대팀"
-                    if _add_vote(p_nick.strip(), team_val):
-                        st.success(f"✅ {p_nick.strip()}님의 예측이 등록됐어요!")
-                        st.balloons()
-                        st.rerun()
-                    else:
-                        st.error("등록에 실패했습니다. 잠시 후 다시 시도해주세요.")
-
+                    tv = "롯데" if "롯데" in pt else "상대팀"
+                    if _add_vote(pn.strip(), tv): st.success(f"✅ {pn.strip()}님의 예측이 등록됐어요!"); st.balloons(); st.rerun()
+                    else: st.error("등록에 실패했습니다.")
         st.markdown('</div>', unsafe_allow_html=True)
-
-        # 통계 카드
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">📊 오늘 참여 통계</div>', unsafe_allow_html=True)
+        st.markdown('<div class="card"><div class="card-title">📊 오늘 참여 통계</div>', unsafe_allow_html=True)
         sc1, sc2, sc3 = st.columns(3)
-        with sc1:
-            st.markdown(f"""
-            <div class="stat-box">
-                <div class="stat-val">{total}</div>
-                <div class="stat-lbl">총 참여</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with sc2:
-            st.markdown(f"""
-            <div class="stat-box">
-                <div class="stat-val" style="color:#EF4444">{lotte_n}</div>
-                <div class="stat-lbl">롯데 응원</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with sc3:
-            st.markdown(f"""
-            <div class="stat-box">
-                <div class="stat-val" style="color:#3B82F6">{opp_n}</div>
-                <div class="stat-lbl">상대팀 응원</div>
-            </div>
-            """, unsafe_allow_html=True)
+        with sc1: st.markdown(f'<div class="stat-box"><div class="stat-val">{tp}</div><div class="stat-lbl">총 참여</div></div>', unsafe_allow_html=True)
+        with sc2: st.markdown(f'<div class="stat-box"><div class="stat-val" style="color:#EF4444">{ln}</div><div class="stat-lbl">롯데 응원</div></div>', unsafe_allow_html=True)
+        with sc3: st.markdown(f'<div class="stat-box"><div class="stat-val" style="color:#3B82F6">{on}</div><div class="stat-lbl">상대팀 응원</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with pc2:
-        # 실시간 결과
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="card-title">📊 실시간 예측 결과</div>', unsafe_allow_html=True)
-
-        if total > 0:
-            st.markdown(f"""
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-                <span style="font-size:16px;font-weight:800;color:#EF4444">🔴 롯데 {lotte_pct}%</span>
-                <span style="font-size:16px;font-weight:800;color:#3B82F6">{opp_pct}% 상대팀 💙</span>
-            </div>
-            <div class="vote-bar-wrap" style="height:60px;margin-bottom:24px">
-                <div class="vote-lotte" style="width:{lotte_pct}%;font-size:16px">{"롯데" if lotte_pct>16 else ""}</div>
-                <div class="vote-opp" style="font-size:16px">{"상대팀" if opp_pct>16 else ""}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # 롯데 응원단
-            l_voters = votes[votes["selected_team"] == "롯데"]["nickname"].tolist()
-            o_voters = votes[votes["selected_team"] == "상대팀"]["nickname"].tolist()
-
-            if l_voters:
-                tags = "".join([f'<span class="voter-tag">⚾ {n}</span>' for n in l_voters])
-                st.markdown(f"""
-                <div style="margin-bottom:18px">
-                    <p style="font-size:14px;font-weight:800;color:#EF4444;margin-bottom:8px">🔴 롯데 응원단 ({len(l_voters)}명)</p>
-                    <div>{tags}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-            if o_voters:
-                tags = "".join([f'<span class="voter-tag">💙 {n}</span>' for n in o_voters])
-                st.markdown(f"""
-                <div>
-                    <p style="font-size:14px;font-weight:800;color:#3B82F6;margin-bottom:8px">💙 상대팀 응원단 ({len(o_voters)}명)</p>
-                    <div>{tags}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-            # 응원 메시지
-            if lotte_pct > 60:
-                msg = f"오늘은 팬들의 {lotte_pct}%가 롯데를 응원하고 있어요! 이길 것 같은 느낌이 팍팍!! 💪"
-                color = "#EF4444"
-            elif lotte_pct < 40:
-                msg = f"팬들의 {opp_pct}%가 상대팀을 응원하네요. 롯데가 역전의 명수임을 보여줄 시간! ⚡"
-                color = "#3B82F6"
-            else:
-                msg = "팬들도 오늘 경기는 반반! 어느 팀이 이길지 모르는 명승부가 예상됩니다 🔥"
-                color = "#F59E0B"
-
-            st.markdown(f"""
-            <div style="background:linear-gradient(135deg,#F8F9FA,#F2F4F7);border-radius:14px;
-                        padding:16px;margin-top:20px;border-left:4px solid {color}">
-                <p style="font-size:14px;color:#333D4B;margin:0;font-weight:600;line-height:1.6">{msg}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
+        st.markdown('<div class="card"><div class="card-title">📊 실시간 예측 결과</div>', unsafe_allow_html=True)
+        if tp > 0:
+            st.markdown(f'<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:16px;font-weight:800;color:#EF4444">🔴 롯데 {lp}%</span><span style="font-size:16px;font-weight:800;color:#3B82F6">{op}% 상대팀 💙</span></div><div class="vote-wrap" style="height:60px;margin-bottom:24px"><div class="vote-l" style="width:{lp}%;font-size:16px">{"롯데" if lp>16 else ""}</div><div class="vote-o" style="font-size:16px">{"상대팀" if op>16 else ""}</div></div>', unsafe_allow_html=True)
+            lv = votes[votes["selected_team"]=="롯데"]["nickname"].tolist()
+            ov = votes[votes["selected_team"]=="상대팀"]["nickname"].tolist()
+            if lv:
+                tags = "".join([f'<span class="vtag">⚾ {n}</span>' for n in lv])
+                st.markdown(f'<p style="font-size:14px;font-weight:800;color:#EF4444;margin-bottom:8px">🔴 롯데 응원단 ({len(lv)}명)</p><div style="margin-bottom:16px">{tags}</div>', unsafe_allow_html=True)
+            if ov:
+                tags = "".join([f'<span class="vtag">💙 {n}</span>' for n in ov])
+                st.markdown(f'<p style="font-size:14px;font-weight:800;color:#3B82F6;margin-bottom:8px">💙 상대팀 응원단 ({len(ov)}명)</p><div>{tags}</div>', unsafe_allow_html=True)
+            color = "#EF4444" if lp>60 else "#3B82F6" if lp<40 else "#F59E0B"
+            msg = f"팬들의 {lp}%가 롯데를 응원해요! 이길 것 같은 느낌! 💪" if lp>60 else f"팬들의 {op}%가 상대팀 응원. 역전의 명수 롯데 파이팅! ⚡" if lp<40 else "팽팽한 예측! 명승부가 예상됩니다 🔥"
+            st.markdown(f'<div style="background:#F8F9FA;border-radius:14px;padding:16px;margin-top:20px;border-left:4px solid {color}"><p style="font-size:14px;color:#333D4B;margin:0;font-weight:600;line-height:1.6">{msg}</p></div>', unsafe_allow_html=True)
         else:
-            st.markdown("""
-            <div class="empty-state" style="padding:60px 0">
-                <div class="empty-icon">🎯</div>
-                <div class="empty-title">아직 예측이 없어요</div>
-                <div class="empty-sub">첫 번째 예측자가 되어보세요!<br>왼쪽에서 예측을 입력해보세요 👈</div>
-            </div>
-            """, unsafe_allow_html=True)
-
+            st.markdown('<div class="empty" style="padding:60px 0"><div class="empty-i">🎯</div><div class="empty-t">아직 예측이 없어요</div><div class="empty-s">첫 번째 예측자가 되어보세요! 👈</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-
-# ══════════════════════════════════════════
-#  푸터
-# ══════════════════════════════════════════
-st.markdown("""
-<div style="text-align:center;padding:40px 0 20px;color:#B0B8C1;font-size:13px;font-weight:500;line-height:1.8">
-    ⚾ 부산갈매기 · 롯데 자이언츠 비공식 팬 플랫폼<br>
-    <span style="font-size:12px;color:#D1D5DB">모든 데이터는 KBO 공식 홈페이지 및 다음 스포츠를 기반으로 합니다</span>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(f'<div style="text-align:center;padding:40px 0 20px;color:#B0B8C1;font-size:13px;font-weight:500;line-height:1.8">⚾ 부산갈매기 · 롯데 자이언츠 비공식 팬 플랫폼<br><span style="font-size:12px;color:#D1D5DB">데이터 출처: KBO 공식, Google News, YouTube</span></div>', unsafe_allow_html=True)
