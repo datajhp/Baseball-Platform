@@ -99,6 +99,46 @@ div[data-testid="stTextInput"] input,div[data-testid="stTextArea"] textarea{bord
 div[data-testid="stTextInput"] input:focus,div[data-testid="stTextArea"] textarea:focus{border-color:#3182F6!important;box-shadow:0 0 0 4px rgba(49,130,246,.1)!important;background:white!important}
 div[data-testid="stLinkButton"] a{border-radius:12px!important;font-weight:700!important}
 div[data-testid="stAlert"]{border-radius:12px!important}
+/* ── 라디오 버튼 텍스트 가시성 명시 강제 ── */
+div[data-testid="stRadio"] label {
+    color: #191F28 !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+div[data-testid="stRadio"] > div > label {
+    color: #191F28 !important;
+}
+div[data-testid="stRadio"] p,
+div[data-testid="stRadio"] span {
+    color: #191F28 !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+/* 라디오 선택지 레이아웃 */
+div[data-testid="stRadio"] > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+}
+div[data-testid="stRadio"] > div > label {
+    background: #F8F9FA !important;
+    border: 2px solid #E5E8EB !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+div[data-testid="stRadio"] > div > label:hover {
+    border-color: #3182F6 !important;
+    background: #EFF6FF !important;
+}
+div[data-testid="stRadio"] > div > label:has(input:checked) {
+    background: #EFF6FF !important;
+    border-color: #3182F6 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -146,60 +186,116 @@ def get_standings():
 
 @st.cache_data(ttl=120)
 def get_today_games():
-    """KBO 오늘 경기 목록 — 여러 경로 시도"""
+    """KBO 오늘 경기 — 네이버 스포츠 파싱 (가장 안정적)"""
+    today_str = today.strftime('%Y%m%d')
     games = []
+
+    # ── 소스 1: 네이버 스포츠 KBO 일정
     try:
-        # 경로 1: 게임센터 메인
-        res = requests.get("https://www.koreabaseball.com/Schedule/GameCenter/Main.aspx", headers=HDR, timeout=10)
+        url = f"https://sports.news.naver.com/kbaseball/schedule/index?date={today_str}"
+        res = requests.get(url, headers=HDR, timeout=10)
         soup = BeautifulSoup(res.text, "html.parser")
 
-        # 선택자 시도 목록
-        selectors = [
-            ("div.game_lst li", ".team_away .team_name", ".team_home .team_name", ".score", ".time", ".stadium", ".state"),
-            (".ScheduleList li", ".away", ".home", ".score", ".time", ".place", ".state"),
-        ]
-        for sel, aw_s, hm_s, sc_s, ti_s, st_s, sta_s in selectors:
-            items = soup.select(sel)
-            if not items:
+        # 오늘 날짜 경기만 추출
+        for row in soup.select("table.schedule_table tbody tr, table tbody tr"):
+            cols = row.select("td")
+            if len(cols) < 3:
                 continue
-            for item in items:
-                aw = (item.select_one(aw_s) or item.select_one(".away")).get_text(strip=True) if item.select_one(aw_s) or item.select_one(".away") else ""
-                hm = (item.select_one(hm_s) or item.select_one(".home")).get_text(strip=True) if item.select_one(hm_s) or item.select_one(".home") else ""
-                sc = item.select_one(sc_s)
-                ti = item.select_one(ti_s)
-                stad = item.select_one(st_s)
-                sta = item.select_one(sta_s)
-                games.append({
-                    "away": aw, "home": hm,
-                    "score": sc.get_text(strip=True) if sc else "vs",
-                    "time": ti.get_text(strip=True) if ti else "",
-                    "stadium": stad.get_text(strip=True) if stad else "",
-                    "state": sta.get_text(strip=True) if sta else "",
-                    "is_lotte": "롯데" in aw or "롯데" in hm,
-                })
-            if games:
-                break
+            texts = [c.get_text(strip=True) for c in cols]
+            full = " ".join(texts)
+            # 팀명 포함 여부로 경기 행 판단
+            kbo_teams = ["롯데","삼성","LG","두산","KT","SSG","한화","NC","KIA","키움"]
+            if sum(1 for t in kbo_teams if t in full) >= 2:
+                # 팀 추출 (포함된 팀들 찾기)
+                found = [t for t in kbo_teams if t in full]
+                away = found[0] if len(found) > 0 else ""
+                home = found[1] if len(found) > 1 else ""
+                # 점수 패턴
+                score_match = re.search(r'(\d+)\s*[:\-]\s*(\d+)', full)
+                score = f"{score_match.group(1)}:{score_match.group(2)}" if score_match else "vs"
+                # 시간 패턴
+                time_match = re.search(r'(\d{1,2}:\d{2})', full)
+                time_s = time_match.group(1) if time_match else ""
+                # 구장
+                stadiums = ["사직","잠실","수원","대전","고척","창원","광주","대구","인천","포항"]
+                stad = next((s for s in stadiums if s in full), "")
+                # 상태
+                state = ""
+                if "종료" in full or "경기종료" in full:
+                    state = "종료"
+                elif "취소" in full:
+                    state = "취소"
+                elif score_match and score != "vs":
+                    state = "진행중"
 
-        # 경로 2: 테이블 파싱 fallback
-        if not games:
+                games.append({
+                    "away": away, "home": home, "score": score,
+                    "time": time_s, "stadium": stad, "state": state,
+                    "is_lotte": "롯데" in away or "롯데" in home,
+                })
+    except Exception:
+        pass
+
+    # ── 소스 2: KBO 공식 Schedule 페이지 (fallback)
+    if not games:
+        try:
+            url = f"https://www.koreabaseball.com/Schedule/Schedule.aspx"
+            res = requests.get(url, headers=HDR, timeout=10)
+            soup = BeautifulSoup(res.text, "html.parser")
+            kbo_teams = ["롯데","삼성","LG","두산","KT","SSG","한화","NC","KIA","키움"]
+
             for table in soup.select("table"):
-                rows = table.select("tr")[1:]
-                for row in rows:
+                rows = table.select("tr")
+                for row in rows[1:]:
                     cols = [td.get_text(strip=True) for td in row.select("td")]
-                    if len(cols) >= 4 and any(c for c in cols):
+                    if not cols:
+                        continue
+                    full = " ".join(cols)
+                    found = [t for t in kbo_teams if t in full]
+                    if len(found) >= 2:
+                        score_match = re.search(r'(\d+)\s*[:\-]\s*(\d+)', full)
+                        time_match  = re.search(r'(\d{1,2}:\d{2})', full)
+                        stadiums = ["사직","잠실","수원","대전","고척","창원","광주","대구","인천"]
                         games.append({
-                            "away": cols[1] if len(cols) > 1 else "",
-                            "home": cols[3] if len(cols) > 3 else "",
-                            "score": cols[2] if len(cols) > 2 else "vs",
-                            "time": cols[0] if cols else "",
-                            "stadium": cols[4] if len(cols) > 4 else "",
-                            "state": cols[5] if len(cols) > 5 else "",
-                            "is_lotte": any("롯데" in c for c in cols),
+                            "away": found[0], "home": found[1],
+                            "score": f"{score_match.group(1)}:{score_match.group(2)}" if score_match else "vs",
+                            "time": time_match.group(1) if time_match else "",
+                            "stadium": next((s for s in stadiums if s in full), ""),
+                            "state": "종료" if "종료" in full else "",
+                            "is_lotte": "롯데" in found,
                         })
                 if games:
                     break
-    except Exception:
-        pass
+        except Exception:
+            pass
+
+    # ── 소스 3: KBO 공식 JSON API (최후 fallback)
+    if not games:
+        try:
+            url = f"https://www.koreabaseball.com/ws/Main.asmx/GetKBOGameList"
+            payload = {"leId": "1", "srId": "0,1,3,4,5,7,8,9", "date": today_str}
+            res = requests.post(url, data=payload, headers={**HDR, "Content-Type": "application/x-www-form-urlencoded"}, timeout=10)
+            data = res.json()
+            kbo_teams = {"LT": "롯데", "SS": "삼성", "LG": "LG", "OB": "두산",
+                         "KT": "KT",  "SK": "SSG", "HH": "한화", "NC": "NC",
+                         "HT": "KIA", "WO": "키움"}
+            for g in data.get("game", []):
+                away_cd = g.get("visitTeamCode", "")
+                home_cd = g.get("homeTeamCode", "")
+                away = kbo_teams.get(away_cd, away_cd)
+                home = kbo_teams.get(home_cd, home_cd)
+                vs = g.get("visitScore","")
+                hs = g.get("homeScore","")
+                score = f"{vs}:{hs}" if vs != "" and hs != "" else "vs"
+                games.append({
+                    "away": away, "home": home, "score": score,
+                    "time": g.get("gtime",""), "stadium": g.get("stadium",""),
+                    "state": g.get("status",""),
+                    "is_lotte": "롯데" in [away, home],
+                })
+        except Exception:
+            pass
+
     return games
 
 
@@ -432,8 +528,8 @@ with t_home:
                     bdg = f'<span class="sb sb-sched">{ti}</span>'
                 st.markdown(f'<div class="game-card {"lc" if is_l else ""}"><div style="flex:1"><div style="display:flex;align-items:center;justify-content:center;gap:16px"><span style="font-size:15px;font-weight:{"900" if is_l else "600"};color:#191F28;min-width:64px;text-align:right">{aw}</span><span class="score-box">{sc}</span><span style="font-size:15px;font-weight:{"900" if is_l else "600"};color:#191F28;min-width:64px">{hm}</span></div><div style="text-align:center;margin-top:8px;display:flex;gap:8px;justify-content:center;align-items:center">{bdg}<span style="font-size:12px;color:#B0B8C1">{stad}</span></div></div></div>', unsafe_allow_html=True)
         else:
-            st.markdown('<div class="empty" style="padding:28px 0"><div class="empty-i">🌙</div><div class="empty-t">오늘은 경기가 없어요</div><div class="empty-s">내일을 기대해봐요!</div></div>', unsafe_allow_html=True)
-        st.link_button("📋 전체 경기 일정", "https://www.giantsclub.com/html/?pcode=257", use_container_width=True)
+            st.markdown(f'<div class="empty" style="padding:28px 0"><div class="empty-i">🌙</div><div class="empty-t">경기 정보를 불러오지 못했어요</div><div class="empty-s">아래 버튼에서 직접 확인해보세요</div></div>', unsafe_allow_html=True)
+        st.link_button("📋 네이버 스포츠에서 오늘 경기 확인", f"https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime('%Y%m%d')}", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         # 뉴스
@@ -485,8 +581,8 @@ with t_game:
             sbdg = '<span class="sb sb-live"><span class="ldot" style="width:6px;height:6px"></span>진행중</span>' if is_live else f'<span class="sb sb-sched">{ti}</span>'
             st.markdown(f'<div style="background:linear-gradient(135deg,#EFF6FF,#F0F9FF);border-radius:18px;padding:28px;text-align:center;margin-bottom:18px"><div style="margin-bottom:12px">{sbdg}</div><div style="display:flex;align-items:center;justify-content:center;gap:24px"><div><div style="font-size:24px;font-weight:900;color:#191F28">{aw}</div><div style="font-size:12px;color:#8B95A1;margin-top:3px">원정</div></div><div style="font-size:36px;font-weight:900;color:#191F28;letter-spacing:6px;padding:12px 24px;background:white;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06)">{sc}</div><div><div style="font-size:24px;font-weight:900;color:#191F28">{hm}</div><div style="font-size:12px;color:#8B95A1;margin-top:3px">홈</div></div></div><div style="margin-top:14px;font-size:13px;color:#8B95A1;font-weight:600">🏟️ {stad}</div></div>', unsafe_allow_html=True)
         else:
-            st.markdown('<div class="empty" style="padding:32px 0"><div class="empty-i">🌙</div><div class="empty-t">오늘 롯데 경기 없음</div></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('<div class="empty" style="padding:32px 0"><div class="empty-i">🌙</div><div class="empty-t">오늘 롯데 경기 정보를 불러오지 못했어요</div><div class="empty-s">아래 버튼에서 직접 확인해보세요</div></div>', unsafe_allow_html=True)
+        st.link_button("📋 네이버 스포츠 오늘 경기", f"https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime('%Y%m%d')}", use_container_width=True)
 
         st.markdown('<div class="card"><div class="card-title">📡 실시간 문자 중계 <span class="sb sb-live" style="font-size:11px;padding:3px 9px"><span class="ldot" style="width:6px;height:6px"></span>LIVE</span></div><p style="font-size:13px;color:#8B95A1;margin-bottom:14px">경기 중일 때 실시간 중계를 확인할 수 있습니다</p>', unsafe_allow_html=True)
         st.components.v1.iframe("https://sports.daum.net/match/80090756", height=500, scrolling=True)
