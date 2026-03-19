@@ -336,8 +336,8 @@ div[data-testid="stToast"] { border-radius: 14px !important; }
 # ══════════════════════════════════════════
 #  Supabase 초기화
 # ══════════════════════════════════════════
-SUPABASE_URL = "https://vdltbxhknxhckhakuyin.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkbHRieGhrbnhoY2toYWt1eWluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4MzQ3MTgsImV4cCI6MjA2NjQxMDcxOH0.XY07QQtvjjQ2QyR4-FvZGk3yipRs8EGYmHBZ845tUu0"
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 @st.cache_resource
 def get_sb():
