@@ -405,34 +405,79 @@ def get_standings():
         return None
 
 
-@st.cache_data(ttl=90)
+@st.cache_data(ttl=60)
 def get_today_games():
     """
-    KBO 오늘 경기 파싱
-    - 시범경기(srId=0) / 정규시즌(srId=1) 자동 감지
-    - 소스 1: KBO 공식 GetScheduleList API
-    - 소스 2: 네이버 스포츠 일정 API
-    - 소스 3: HTML fallback
+    KBO 오늘 경기 — GetKboGameList API (확인된 필드명 사용)
+    AWAY_NM, HOME_NM, T_SCORE_CN, B_SCORE_CN, GAME_STATE_SC, G_TM, S_NM
     """
-    KT = {
-        "LT":"롯데","SS":"삼성","LG":"LG","OB":"두산",
-        "KT":"KT","SK":"SSG","HH":"한화","NC":"NC","HT":"KIA","WO":"키움",
-    }
     today_str = today.strftime("%Y%m%d")
     games = []
 
-    # ── 소스 1: KBO 공식 API (시범경기 srId=0 포함)
-    for sr_id in ["0", "1", "0,1,3,4,5,7,8,9"]:
-        if games:
-            break
-        for endpoint in [
-            "https://www.koreabaseball.com/ws/Schedule.asmx/GetScheduleList",
-            "https://www.koreabaseball.com/ws/Main.asmx/GetKBOGameList",
-        ]:
+    # ── 소스 1: GetKboGameList (KBO 공식 메인 API)
+    try:
+        url = "https://www.koreabaseball.com/ws/Main.asmx/GetKboGameList"
+        payload = {"leId": "1", "srId": "1", "date": today_str}
+        res = requests.post(
+            url, data=payload,
+            headers={
+                **HDR,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-Requested-With": "XMLHttpRequest",
+                "Origin": "https://www.koreabaseball.com",
+                "Referer": "https://www.koreabaseball.com/",
+            },
+            timeout=10)
+        if res.status_code == 200:
+            data = res.json()
+            for g in data.get("game", []):
+                away  = g.get("AWAY_NM", "")
+                home  = g.get("HOME_NM", "")
+                vs    = str(g.get("T_SCORE_CN", ""))
+                hs    = str(g.get("B_SCORE_CN", ""))
+                sc    = str(g.get("GAME_STATE_SC", ""))
+                time_s = g.get("G_TM", "")[:5]
+                stad   = g.get("S_NM", "")
+                cancel = g.get("CANCEL_SC_NM", "")
+
+                score = f"{vs}:{hs}" if vs not in ("","None","0") or hs not in ("","None","0") else "vs"
+                # 점수가 실제로 있는지 확인 (경기 전은 0:0이라도 표시 안 함)
+                if sc == "0" or sc == "":  # 경기 전
+                    score = "vs"
+                    state = ""
+                elif sc == "1":            # 진행중
+                    score = f"{vs}:{hs}"
+                    state = "진행중"
+                elif sc == "2":            # 지연
+                    score = f"{vs}:{hs}"
+                    state = "지연"
+                elif sc == "3":            # 종료
+                    score = f"{vs}:{hs}"
+                    state = "종료"
+                else:
+                    score = "vs"
+                    state = ""
+
+                if "취소" in cancel or "우천" in cancel:
+                    state = "취소"
+                    score = "vs"
+
+                if away and home:
+                    games.append({
+                        "away": away, "home": home, "score": score,
+                        "time": time_s, "stadium": stad, "state": state,
+                        "is_lotte": "롯데" in [away, home],
+                    })
+    except Exception:
+        pass
+
+    # ── 소스 2: GetScheduleList (srId=1 정규, srId=0 시범)
+    if not games:
+        for sr_id in ["1", "0"]:
             try:
-                payload = {"leId": "1", "srId": sr_id, "date": today_str}
                 res = requests.post(
-                    endpoint, data=payload,
+                    "https://www.koreabaseball.com/ws/Schedule.asmx/GetScheduleList",
+                    data={"leId": "1", "srId": sr_id, "date": today_str},
                     headers={
                         **HDR,
                         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -443,24 +488,17 @@ def get_today_games():
                 if res.status_code != 200:
                     continue
                 data = res.json()
-                # 여러 키 시도
-                glist = (data.get("game") or data.get("data") or
-                         data.get("games") or data.get("result") or [])
-                for g in glist:
-                    away_cd = g.get("visitTeamCode", g.get("awayTeamCode",""))
-                    home_cd = g.get("homeTeamCode","")
-                    away = KT.get(away_cd, g.get("visitTeamName", g.get("awayTeamName", away_cd)))
-                    home = KT.get(home_cd, g.get("homeTeamName", home_cd))
-                    vs = str(g.get("visitScore", g.get("awayScore","")))
-                    hs = str(g.get("homeScore",""))
-                    score = f"{vs}:{hs}" if vs not in ("","None","-") and hs not in ("","None","-") else "vs"
-                    sc = str(g.get("status", g.get("statusCode", g.get("gameStatus",""))))
-                    state = ("종료" if sc in ("3","경기종료","RESULT","종료") else
-                             "진행중" if sc in ("1","경기중","LIVE","진행중") else
-                             "취소" if "취소" in sc else "")
-                    gt = g.get("gameTime", g.get("gtime", g.get("startTime",""))) or ""
-                    time_s = gt[:5] if gt else ""
-                    stad = g.get("stadiumName", g.get("stadium", g.get("venueName","")))
+                for g in data.get("game", []):
+                    away  = g.get("AWAY_NM", g.get("awayTeamName", ""))
+                    home  = g.get("HOME_NM", g.get("homeTeamName", ""))
+                    vs    = str(g.get("T_SCORE_CN", g.get("awayScore", "")))
+                    hs    = str(g.get("B_SCORE_CN", g.get("homeScore", "")))
+                    sc    = str(g.get("GAME_STATE_SC", g.get("status", "")))
+                    time_s = g.get("G_TM", g.get("gameTime", ""))[:5]
+                    stad   = g.get("S_NM", g.get("stadiumName", ""))
+                    if sc == "3": state, score = "종료", f"{vs}:{hs}"
+                    elif sc == "1": state, score = "진행중", f"{vs}:{hs}"
+                    else: state, score = "", "vs"
                     if away and home:
                         games.append({
                             "away": away, "home": home, "score": score,
@@ -472,61 +510,21 @@ def get_today_games():
             except Exception:
                 continue
 
-    # ── 소스 2: 네이버 스포츠 API (시범경기 roundCode=1)
-    if not games:
-        for round_code in ["1", "0", "2"]:
-            try:
-                url = (f"https://api-gw.sports.naver.com/schedule/games"
-                       f"?fields=basic&upperCategoryId=kbaseball&categoryId=kbo"
-                       f"&date={today_str}&roundCode={round_code}&size=20")
-                nv_hdr = {**HDR, "Referer": "https://sports.news.naver.com/",
-                          "Origin": "https://sports.news.naver.com"}
-                res = requests.get(url, headers=nv_hdr, timeout=10)
-                if res.status_code != 200:
-                    continue
-                data = res.json()
-                glist = data.get("games", data.get("game", data.get("result", [])))
-                for g in glist:
-                    away = g.get("awayTeamName", g.get("visitTeamName",""))
-                    home = g.get("homeTeamName","")
-                    vs   = g.get("awayScore", g.get("visitScore",""))
-                    hs   = g.get("homeScore","")
-                    score = f"{vs}:{hs}" if str(vs) not in ("","None") and str(hs) not in ("","None") else "vs"
-                    sc    = g.get("statusCode", g.get("status",""))
-                    state = ("진행중" if sc in ("LIVE","1") else
-                             "종료"   if sc in ("RESULT","3") else
-                             "취소"   if "CANCEL" in str(sc) else "")
-                    gt    = g.get("startTime", g.get("gameTime","")) or ""
-                    time_s = gt[:5] if gt else ""
-                    stad   = g.get("venueName", g.get("stadiumName",""))
-                    if away and home:
-                        games.append({
-                            "away": away, "home": home, "score": score,
-                            "time": time_s, "stadium": stad, "state": state,
-                            "is_lotte": "롯데" in [away, home],
-                        })
-                if games:
-                    break
-            except Exception:
-                continue
-
-    # ── 소스 3: 네이버 스포츠 HTML 파싱 (최후 수단)
+    # ── 소스 3: HTML 파싱 최후 수단
     if not games:
         try:
             url = f"https://sports.news.naver.com/kbaseball/schedule/index?date={today_str}"
             res = requests.get(url, headers={**HDR, "Referer": "https://sports.news.naver.com/"}, timeout=12)
             soup = BeautifulSoup(res.text, "html.parser")
             kbo_teams = ["롯데","삼성","LG","두산","KT","SSG","한화","NC","KIA","키움"]
-            stadiums   = ["사직","잠실","수원","대전","고척","창원","광주","대구","인천","포항","청주"]
+            stadiums  = ["사직","잠실","수원","대전","고척","창원","광주","대구","인천","포항","청주"]
             seen = set()
             for row in soup.select("tr, li"):
-                text = row.get_text(" ", strip=True)
+                text  = row.get_text(" ", strip=True)
                 found = [t for t in kbo_teams if t in text]
-                if len(found) < 2:
-                    continue
+                if len(found) < 2: continue
                 key = f"{found[0]}{found[1]}"
-                if key in seen:
-                    continue
+                if key in seen: continue
                 seen.add(key)
                 sm = re.search(r'(\d+)\s*[:\-]\s*(\d+)', text)
                 tm = re.search(r'(\d{1,2}:\d{2})', text)
@@ -821,31 +819,7 @@ with t_home:
                     </div>
                 </div>""", unsafe_allow_html=True)
         else:
-            st.markdown('<div class="EMPTY" style="padding:28px 0"><div class="EMPTY-i">🌙</div><div class="EMPTY-t">경기 정보를 불러오지 못했어요</div><div class="EMPTY-s">아래 버튼에서 직접 확인하세요</div></div>', unsafe_allow_html=True)
-            with st.expander("🔧 파싱 디버그 (개발용)"):
-                today_str = today.strftime("%Y%m%d")
-                st.write(f"조회 날짜: {today_str}")
-                for sr in ["0","1"]:
-                    try:
-                        r = requests.post(
-                            "https://www.koreabaseball.com/ws/Schedule.asmx/GetScheduleList",
-                            data={"leId":"1","srId":sr,"date":today_str},
-                            headers={**HDR,"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8","X-Requested-With":"XMLHttpRequest"},
-                            timeout=8)
-                        st.write(f"KBO API (srId={sr}) → status:{r.status_code}")
-                        if r.status_code == 200:
-                            st.code(r.text[:500])
-                    except Exception as e:
-                        st.write(f"KBO API (srId={sr}) → 오류: {e}")
-                try:
-                    r2 = requests.get(
-                        f"https://api-gw.sports.naver.com/schedule/games?fields=basic&upperCategoryId=kbaseball&categoryId=kbo&date={today_str}&roundCode=1&size=20",
-                        headers={**HDR,"Referer":"https://sports.news.naver.com/"}, timeout=8)
-                    st.write(f"Naver API → status:{r2.status_code}")
-                    if r2.status_code == 200:
-                        st.code(r2.text[:500])
-                except Exception as e:
-                    st.write(f"Naver API → 오류: {e}")
+            st.markdown('<div class="EMPTY" style="padding:28px 0"><div class="EMPTY-i">🌙</div><div class="EMPTY-t">오늘은 경기가 없어요</div><div class="EMPTY-s">내일을 기대해봐요!</div></div>', unsafe_allow_html=True)
         st.link_button(f"📋 네이버 스포츠 오늘 경기", f"https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime('%Y%m%d')}", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -931,7 +905,7 @@ with t_game:
                 </div>
             </div>""", unsafe_allow_html=True)
         else:
-            st.markdown('<div class="EMPTY" style="padding:32px 0"><div class="EMPTY-i">🌙</div><div class="EMPTY-t">오늘 롯데 경기 정보 없음</div><div class="EMPTY-s">아래 버튼에서 확인해보세요</div></div>', unsafe_allow_html=True)
+            st.markdown('<div class="EMPTY" style="padding:32px 0"><div class="EMPTY-i">🌙</div><div class="EMPTY-t">오늘 롯데 경기 없음</div><div class="EMPTY-s">다음 경기를 기대해요!</div></div>', unsafe_allow_html=True)
         st.link_button("📋 네이버 스포츠 오늘 경기", f"https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime('%Y%m%d')}", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
