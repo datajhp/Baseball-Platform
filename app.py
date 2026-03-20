@@ -396,16 +396,16 @@ HDR = {
 # ══════════════════════════════════════════
 # 네이버 스포츠 CDN (안정적, CORS 없음)
 TEAM_LOGO = {
-    "LG":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_LG.png",
-    "SSG": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_SK.png",
-    "두산": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_OB.png",
-    "삼성": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_SS.png",
-    "NC":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_NC.png",
-    "롯데": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_LT.png",
-    "키움": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_WO.png",
-    "KT":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_KT.png",
-    "KIA": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_HT.png",
-    "한화": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_HH.png",
+    "LG":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LG.png",
+    "SSG": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SK.png",
+    "두산": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/OB.png",
+    "삼성": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SS.png",
+    "NC":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/NC.png",
+    "롯데": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LT.png",
+    "키움": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/WO.png",
+    "KT":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/KT.png",
+    "KIA": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HT.png",
+    "한화": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HH.png",
 }
 
 def team_logo_html(team_name, size=52):
@@ -902,36 +902,38 @@ st.markdown(f"""
 
 def html_card(title_html, body_html, height=None):
     """
-    st.components.v1.html()을 사용해 img 등 Streamlit 마크다운 sanitizer를 우회.
-    height 미지정 시 내용에 맞게 자동 조정.
+    st.components.v1.html()을 사용해 Streamlit 마크다운 sanitizer를 우회.
+    ResizeObserver로 높이를 콘텐츠에 맞게 자동 조정.
     """
     css = """
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     * { font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif; box-sizing:border-box; margin:0; padding:0; }
-    body { background:transparent; padding:0; margin:0; }
+    html, body { background:transparent; padding:0; margin:0; overflow:hidden; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
     a { text-decoration:none; }
     """
-    card_style = "background:#fff;border-radius:20px;padding:22px;border:1px solid #F0F2F5;box-shadow:0 2px 12px rgba(0,0,0,.04);font-family:'Pretendard',sans-serif"
+    card_style = "background:#fff;border-radius:20px;padding:22px 22px 28px;border:1px solid #F0F2F5;box-shadow:0 2px 12px rgba(0,0,0,.04);font-family:'Pretendard',sans-serif"
     title_style = "font-size:17px;font-weight:800;color:#191F28;margin-bottom:18px;display:flex;align-items:center;gap:8px;letter-spacing:-.4px"
-    h = height or "auto"
-    scrolling = "no" if not height else "no"
     full_html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
     <style>{css}</style></head>
     <body>
-    <div style="{card_style}">
+    <div id="card" style="{card_style}">
         <div style="{title_style}">{title_html}</div>
         {body_html}
     </div>
     <script>
-    // 높이 자동 조정
-    window.onload = function() {{
-        var h = document.body.scrollHeight;
-        window.parent.postMessage({{type:'streamlit:setFrameHeight', height: h+8}}, '*');
-    }};
+    function sendHeight() {{
+        var h = document.getElementById('card').getBoundingClientRect().height;
+        window.parent.postMessage({{type:'streamlit:setFrameHeight', height: Math.ceil(h)+16}}, '*');
+    }}
+    window.addEventListener('load', sendHeight);
+    if (window.ResizeObserver) {{
+        new ResizeObserver(sendHeight).observe(document.getElementById('card'));
+    }}
     </script>
     </body></html>"""
-    est_height = height or 300
+    # height에 여유를 충분히 줌 (잘림 방지)
+    est_height = (height or 300) + 32
     st.components.v1.html(full_html, height=est_height, scrolling=False)
 
 
@@ -977,7 +979,7 @@ with t_home:
             lp = round(ln/tv*100,1); op = round(100-lp,1)
             vb_l = "롯데" if lp > 20 else ""
             vb_r = "상대팀" if op > 20 else ""
-            vote_body = f'<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;margin-bottom:8px"><span style="color:#DC2626">🔴 최강 롯데 자이언츠 {lp}%</span><span style="color:#1D4ED8">{op}% 우리에게 질 상대팀 🔵</span></div><div class="VB-wrap"><div class="VB-l" style="width:{lp}%">{vb_l}</div><div class="VB-r">{vb_r}</div></div><p style="text-align:center;font-size:12px;color:#8B95A1;margin-top:8px;font-weight:600">총 {tv}명 참여 중</p>'
+            vote_body = f'<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;margin-bottom:8px"><span style="color:#DC2626">🔴 롯데 {lp}%</span><span style="color:#1D4ED8">{op}% 상대팀 💙</span></div><div class="VB-wrap"><div class="VB-l" style="width:{lp}%">{vb_l}</div><div class="VB-r">{vb_r}</div></div><p style="text-align:center;font-size:12px;color:#8B95A1;margin-top:8px;font-weight:600">총 {tv}명 참여 중</p>'
         else:
             vote_body = '<div class="EMPTY" style="padding:18px 0"><div class="EMPTY-i">🗳️</div><div class="EMPTY-t">아직 예측이 없어요</div><div class="EMPTY-s">승부예측 탭에서 투표하세요!</div></div>'
         st.markdown(f'<div class="T-card"><div class="T-card-title">🎯 오늘의 예측 현황</div>{vote_body}</div>', unsafe_allow_html=True)
@@ -1004,7 +1006,7 @@ with t_home:
         else:
             news_body = '<div style="text-align:center;padding:20px 0;color:#8B95A1">📡 뉴스를 불러오지 못했어요</div>'
         news_more = f'<div style="margin-top:12px"><a href="https://sports.news.naver.com/kbaseball/news/index?type=team&teamCode=LT" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px">🔗 네이버 스포츠 뉴스 더보기</a></div>'
-        html_card("📰 롯데 자이언츠 최신 뉴스", news_body + news_more, height=480)
+        html_card("📰 롯데 자이언츠 최신 뉴스", news_body + news_more, height=540)
 
     # ─ 오른쪽
     with cR:
@@ -1019,11 +1021,11 @@ with t_home:
         else:
             hl_body = '<div style="text-align:center;padding:20px 0;color:#8B95A1;font-family:Pretendard,sans-serif">🎬 영상 로딩 실패</div>'
         yt_more = '<a href="https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D" target="_blank" style="display:block;text-align:center;margin-top:4px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif">▶ YouTube 더보기</a>'
-        html_card("🎬 최신 하이라이트", hl_body + yt_more, height=320)
+        html_card("🎬 최신 하이라이트", hl_body + yt_more, height=400)
 
         # 티켓
         ticket_body = '<p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.8;font-family:Pretendard,sans-serif">일반 예매 오픈<br>경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong></p><a href="https://ticket.giantsclub.com/loginForm.do" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif;margin-bottom:8px">🎫 예매 페이지</a><a href="https://www.giantsclub.com/html/?pcode=257" target="_blank" style="display:block;text-align:center;padding:10px;background:#F2F4F7;color:#333D4B;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif">📋 시즌 일정</a>'
-        html_card("🎟️ 티켓 예매", ticket_body, height=200)
+        html_card("🎟️ 티켓 예매", ticket_body, height=220)
 
 
 # ════════════════════════════════════════════════════
@@ -1072,11 +1074,11 @@ with t_game:
         else:
             hl_body = '<div style="text-align:center;padding:20px 0;color:#8B95A1;font-family:Pretendard,sans-serif">🎬 영상을 불러오지 못했어요</div>'
         yt_more2 = '<a href="https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D" target="_blank" style="display:block;text-align:center;margin-top:4px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif">▶ YouTube 더보기</a>'
-        html_card("🎬 최신 하이라이트", hl_body + yt_more2, height=380)
+        html_card("🎬 최신 하이라이트", hl_body + yt_more2, height=460)
 
         # 티켓 — html_card
         ticket2 = '<p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.8;font-family:Pretendard,sans-serif">일반 예매 오픈<br>경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong></p><a href="https://ticket.giantsclub.com/loginForm.do" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif;margin-bottom:8px">🎫 예매 페이지</a><a href="https://www.giantsclub.com/html/?pcode=257" target="_blank" style="display:block;text-align:center;padding:10px;background:#F2F4F7;color:#333D4B;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif">📋 시즌 일정</a>'
-        html_card("🎟️ 티켓 예매", ticket2, height=200)
+        html_card("🎟️ 티켓 예매", ticket2, height=220)
 
 
 # ════════════════════════════════════════════════════
@@ -1415,7 +1417,7 @@ with t_predict:
         else:
             vote_content = '<div style="text-align:center;padding:52px 0;color:#8B95A1"><div style="font-size:44px;margin-bottom:12px">🗳️</div><div style="font-size:16px;font-weight:700;color:#4E5968;margin-bottom:6px">아직 예측이 없어요</div><div style="font-size:13px">왼쪽에서 첫 번째 예측자가 되어보세요!</div></div>'
 
-        html_card("📊 팬 투표 현황", vote_content, height=520)
+        html_card("📊 팬 투표 현황", vote_content, height=600)
 
         # ── 참여 통계 카드
         stat_body = f"""
@@ -1433,7 +1435,7 @@ with t_predict:
     <div style="font-size:12px;color:#1D4ED8;font-weight:600;margin-top:6px">{opp_name} 응원</div>
   </div>
 </div>"""
-        html_card("📈 오늘 참여 통계", stat_body, height=140)
+        html_card("📈 오늘 참여 통계", stat_body, height=180)
 
 
 # ── 푸터
