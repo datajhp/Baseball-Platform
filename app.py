@@ -387,16 +387,16 @@ HDR = {
 # ══════════════════════════════════════════
 # 네이버 스포츠 CDN (안정적, CORS 없음)
 TEAM_LOGO = {
-    "LG":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_LG.png",
-    "SSG": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_SK.png",
-    "두산": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_OB.png",
-    "삼성": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_SS.png",
-    "NC":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_NC.png",
-    "롯데": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_LT.png",
-    "키움": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_WO.png",
-    "KT":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_KT.png",
-    "KIA": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_HT.png",
-    "한화": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_HH.png",
+    "LG":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LG.png",
+    "SSG": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SK.png",
+    "두산": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/OB.png",
+    "삼성": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SS.png",
+    "NC":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/NC.png",
+    "롯데": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LT.png",
+    "키움": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/WO.png",
+    "KT":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/KT.png",
+    "KIA": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HT.png",
+    "한화": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HH.png",
 }
 
 def team_logo_html(team_name, size=52):
@@ -788,7 +788,7 @@ def render_games_horizontal(games, show_pitcher=True):
   </div>
   {pit_html}
 </div>'''
-    return f'<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px">{cards}</div>'
+    return f'<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;padding-right:4px">{cards}</div>'
 
 
 def render_lotte_game_big(g):
@@ -979,7 +979,7 @@ with t_home:
         game_html = render_games_horizontal(today_games, show_pitcher=True)
         nav_a = f'<div style="margin-top:14px"><a href="https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime("%Y%m%d")}" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px">📋 네이버 스포츠 오늘 경기</a></div>'
         n_games = len(today_games)
-        card_h = 220 if n_games == 0 else max(220, 170 + n_games * 10)
+        card_h = 240 if n_games == 0 else 260
         html_card(
             f'📅 오늘의 KBO 경기 <span style="font-size:13px;color:#8B95A1;font-weight:500">· {today.strftime("%m/%d")}</span>',
             game_html + nav_a,
@@ -1031,15 +1031,15 @@ with t_game:
         # 오늘 전체 경기
         gh = render_games_horizontal(tg, show_pitcher=True)
         na = f'<div style="margin-top:14px"><a href="https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime("%Y%m%d")}" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif">📋 네이버 스포츠 오늘 경기</a></div>'
-        html_card(f'📅 오늘 전체 경기', gh + na, height=300)
+        html_card(f'📅 오늘 전체 경기', gh + na, height=320)
 
         # 롯데 오늘 경기 빅 카드
         if lotg:
             big = render_lotte_game_big(lotg[0])
-            big_h = 380 if lotg[0].get("win_pit") or lotg[0].get("away_sp") else 300
+            big_h = 440 if (lotg[0].get("win_pit") or lotg[0].get("away_sp")) else 360
         else:
             big = '<div style="text-align:center;padding:32px 0;color:#8B95A1;font-family:Pretendard,sans-serif"><div style="font-size:36px;margin-bottom:8px">🌙</div><div style="font-size:15px;font-weight:700;color:#4E5968">오늘 롯데 경기 없음</div></div>'
-            big_h = 180
+            big_h = 200
         html_card("⚾ 오늘 롯데 자이언츠 경기", big, height=big_h)
 
         # 문자 중계 (iframe은 별도 컴포넌트라 단일 호출 불가)
@@ -1216,89 +1216,218 @@ with t_board:
 #  🎯 승부예측
 # ════════════════════════════════════════════════════
 with t_predict:
-    votes = db_today_votes()
-    tp = len(votes)
-    ln = len(votes[votes["selected_team"]=="롯데"]) if tp > 0 else 0
-    on = tp - ln
-    lp = round(ln/tp*100, 1) if tp > 0 else 50.0
-    op = round(100-lp, 1)
+    # ── 데이터 준비
+    pred_games    = get_today_games()
+    pred_standing = get_standings()
+    pred_votes    = db_today_votes()
 
-    pc1, pc2 = st.columns([5, 7], gap="medium")
+    # 오늘 롯데 경기 찾기
+    lotte_game = next((g for g in pred_games if g["is_lotte"]), None)
 
-    with pc1:
+    # 상대팀 이름
+    if lotte_game:
+        opp_name = lotte_game["home"] if lotte_game["away"] == "롯데" else lotte_game["away"]
+        lotte_is_home = lotte_game["home"] == "롯데"
+        game_state = lotte_game["state"]
+        game_score = lotte_game["score"]
+        stad_name  = lotte_game.get("stadium","")
+    else:
+        opp_name = "상대팀"
+        lotte_is_home = True
+        game_state = ""
+        game_score = "vs"
+        stad_name = ""
+
+    # 승률 기반 예측 확률 계산
+    def get_win_rate(team_name, df):
+        if df is None: return 0.5
+        row = df[df["팀"].str.contains(team_name, na=False)]
+        if row.empty: return 0.5
+        try: return float(str(row.iloc[0].get("승률","0.500")).replace(",",""))
+        except: return 0.5
+
+    lotte_wr = get_win_rate("롯데", pred_standing)
+    opp_wr   = get_win_rate(opp_name, pred_standing) if opp_name != "상대팀" else 0.5
+
+    total_wr = lotte_wr + opp_wr
+    if total_wr > 0:
+        ai_lotte_pct = round(lotte_wr / total_wr * 100, 1)
+    else:
+        ai_lotte_pct = 50.0
+    ai_opp_pct = round(100 - ai_lotte_pct, 1)
+
+    # 순위 가져오기
+    def get_rank(team_name, df):
+        if df is None: return "-"
+        row = df[df["팀"].str.contains(team_name, na=False)]
+        return str(row.iloc[0].get("순위","-")) if not row.empty else "-"
+
+    lotte_rank = get_rank("롯데", pred_standing)
+    opp_rank   = get_rank(opp_name, pred_standing) if opp_name != "상대팀" else "-"
+    lotte_logo = TEAM_LOGO.get("롯데","")
+    opp_logo   = TEAM_LOGO.get(opp_name,"")
+
+    # 투표 집계
+    tv = len(pred_votes)
+    vote_ln = len(pred_votes[pred_votes["selected_team"]=="롯데"]) if tv > 0 else 0
+    vote_on = tv - vote_ln
+    vote_lp = round(vote_ln/tv*100, 1) if tv > 0 else 50.0
+    vote_op = round(100 - vote_lp, 1)
+
+    # ── 레이아웃
+    pr1, pr2 = st.columns([5, 7], gap="medium")
+
+    with pr1:
+        # ── 오늘 경기 매치업 카드
+        bdg_html = state_badge_inline(game_state, lotte_game["time"] if lotte_game else "")
+        l_img = f'<img src="{lotte_logo}" width="64" height="64" style="object-fit:contain">' if lotte_logo else '<div style="width:64px;height:64px;background:#FEF2F2;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#DC2626">롯데</div>'
+        o_img = f'<img src="{opp_logo}" width="64" height="64" style="object-fit:contain">' if opp_logo else f'<div style="width:64px;height:64px;background:#EFF6FF;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#1D4ED8">{opp_name}</div>'
+
+        matchup_body = f"""
+<div style="text-align:center;padding:24px 0 20px">
+  <div style="margin-bottom:12px">{bdg_html}</div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:20px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1">
+      {l_img}
+      <div style="font-size:17px;font-weight:900;color:#191F28">롯데</div>
+      <div style="font-size:11px;color:#8B95A1;font-weight:600">{'홈' if lotte_is_home else '원정'} · {lotte_rank}위</div>
+      <div style="font-size:12px;color:#8B95A1">시즌 승률 {lotte_wr:.3f}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:48px">
+      <div style="font-size:13px;color:#D1D5DB;font-weight:400">vs</div>
+      {"<div style='font-size:11px;color:#9CA3AF;font-weight:600'>🏟 "+stad_name+"</div>" if stad_name else ""}
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1">
+      {o_img}
+      <div style="font-size:17px;font-weight:900;color:#191F28">{opp_name}</div>
+      <div style="font-size:11px;color:#8B95A1;font-weight:600">{'원정' if lotte_is_home else '홈'} · {opp_rank}위</div>
+      <div style="font-size:12px;color:#8B95A1">시즌 승률 {opp_wr:.3f}</div>
+    </div>
+  </div>
+</div>"""
+        html_card(f"⚾ {today.strftime('%m월 %d일')} 오늘의 경기", matchup_body, height=280 if lotte_game else 180)
+
+        # ── AI 예측 확률 카드
+        ai_color  = "#DC2626" if ai_lotte_pct >= 50 else "#1D4ED8"
+        ai_winner = "롯데 자이언츠" if ai_lotte_pct >= 50 else opp_name
+        ai_emoji  = "🔴" if ai_lotte_pct >= 50 else "💙"
+        tip_msgs = []
+        if pred_standing is not None:
+            l_row = pred_standing[pred_standing["팀"].str.contains("롯데",na=False)]
+            o_row = pred_standing[pred_standing["팀"].str.contains(opp_name,na=False)] if opp_name != "상대팀" else pd.DataFrame()
+            if not l_row.empty and not o_row.empty:
+                lr, orr = int(l_row.iloc[0].get("순위",10)), int(o_row.iloc[0].get("순위",10))
+                if lr < orr: tip_msgs.append(f"롯데가 {opp_name}보다 {orr-lr}계단 높은 순위")
+                elif lr > orr: tip_msgs.append(f"{opp_name}이(가) 롯데보다 {lr-orr}계단 높은 순위")
+        tip_html = f'<div style="font-size:12px;color:#6B7684;margin-top:8px">📊 {" · ".join(tip_msgs)}</div>' if tip_msgs else ""
+
+        ai_body = f"""
+<div style="text-align:center;padding:8px 0 4px">
+  <div style="font-size:13px;color:#8B95A1;font-weight:600;margin-bottom:16px">순위표 승률 기반 AI 예측</div>
+  <div style="display:flex;align-items:flex-end;justify-content:center;gap:16px;margin-bottom:16px">
+    <div style="text-align:center">
+      <div style="font-size:42px;font-weight:900;color:#DC2626;line-height:1">{ai_lotte_pct}%</div>
+      <div style="font-size:12px;color:#DC2626;font-weight:700;margin-top:4px">🔴 롯데</div>
+    </div>
+    <div style="font-size:22px;color:#E5E7EB;font-weight:300;padding-bottom:12px">:</div>
+    <div style="text-align:center">
+      <div style="font-size:42px;font-weight:900;color:#1D4ED8;line-height:1">{ai_opp_pct}%</div>
+      <div style="font-size:12px;color:#1D4ED8;font-weight:700;margin-top:4px">💙 {opp_name}</div>
+    </div>
+  </div>
+  <div style="height:10px;border-radius:999px;overflow:hidden;background:#F2F4F7;margin-bottom:14px">
+    <div style="height:100%;width:{ai_lotte_pct}%;background:linear-gradient(90deg,#991B1B,#EF4444);border-radius:999px"></div>
+  </div>
+  <div style="background:{'#FEF2F2' if ai_lotte_pct>=50 else '#EFF6FF'};border-radius:12px;padding:12px 16px;display:inline-block">
+    <span style="font-size:14px;font-weight:800;color:{ai_color}">{ai_emoji} {ai_winner} 승리 예측</span>
+  </div>
+  {tip_html}
+</div>"""
+        html_card("🤖 AI 승리 예측", ai_body, height=280)
+
+        # ── 투표 입력 카드
         st.markdown(f"""
         <div class="T-card">
-            <div class="T-card-title">🎯 {today.strftime('%m월 %d일')} 승부 예측</div>
-            <div style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border-radius:16px;
-                        padding:22px;text-align:center;margin-bottom:20px">
-                <div style="font-size:28px;margin-bottom:8px;font-weight:800;color:#191F28">
-                    🔴 롯데 <span style="color:#93C5FD;font-size:20px;font-weight:500">vs</span> 상대팀 💙
-                </div>
-                <div style="font-size:13px;color:#4E5968;font-weight:600">오늘 경기 승자를 예측해보세요!</div>
-            </div>
+            <div class="T-card-title">🗳️ 당신의 예측은?</div>
         """, unsafe_allow_html=True)
-
         if not sb:
             st.warning("⚠️ 데이터베이스 연결이 필요합니다.")
         else:
-            pn = st.text_input("닉네임 *", placeholder="닉네임을 입력하세요", key="pn")
+            pn = st.text_input("닉네임", placeholder="닉네임을 입력하세요", key="pn", label_visibility="collapsed")
             pt = st.radio(
-                "오늘 경기 예측",
-                ["🔴 최강 롯데 자이언츠 이겨라!!", "💙 오늘은 상대팀이 이길 것 같아요"],
-                label_visibility="visible"
+                "예측",
+                [f"🔴 롯데 자이언츠 이겨라!!", f"💙 {opp_name} 이길 것 같아요"],
+                label_visibility="collapsed"
             )
             if st.button("🎯  예측 제출하기", type="primary", use_container_width=True):
                 if not pn.strip():
                     st.warning("닉네임을 입력해주세요.")
-                elif tp > 0 and pn.strip() in votes["nickname"].values:
+                elif tv > 0 and pn.strip() in pred_votes["nickname"].values:
                     st.warning("이미 오늘 예측을 완료했어요! 😊")
                 else:
-                    tv = "롯데" if "롯데" in pt else "상대팀"
-                    if db_add_vote(pn.strip(), tv):
+                    team_val = "롯데" if "롯데" in pt else "상대팀"
+                    if db_add_vote(pn.strip(), team_val):
                         st.success(f"✅ {pn.strip()}님의 예측이 등록됐어요!")
                         st.balloons(); st.rerun()
                     else:
                         st.error("등록에 실패했습니다.")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 통계
-        st.markdown('<div class="T-card"><div class="T-card-title">📊 오늘 참여 통계</div>', unsafe_allow_html=True)
-        s1, s2, s3 = st.columns(3)
-        with s1: st.markdown(f'<div class="ST-box"><div class="ST-val">{tp}</div><div class="ST-lbl">총 참여</div></div>', unsafe_allow_html=True)
-        with s2: st.markdown(f'<div class="ST-box"><div class="ST-val" style="color:#DC2626">{ln}</div><div class="ST-lbl">롯데 응원</div></div>', unsafe_allow_html=True)
-        with s3: st.markdown(f'<div class="ST-box"><div class="ST-val" style="color:#1D4ED8">{on}</div><div class="ST-lbl">상대팀 응원</div></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    with pr2:
+        # ── 팬 투표 현황 카드
+        lv_names = pred_votes[pred_votes["selected_team"]=="롯데"]["nickname"].tolist() if tv > 0 else []
+        ov_names = pred_votes[pred_votes["selected_team"]=="상대팀"]["nickname"].tolist() if tv > 0 else []
 
-    with pc2:
-        st.markdown('<div class="T-card"><div class="T-card-title">📊 실시간 예측 결과</div>', unsafe_allow_html=True)
-        if tp > 0:
-            st.markdown(f"""
-            <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-                <span style="font-size:17px;font-weight:900;color:#DC2626">🔴 롯데 {lp}%</span>
-                <span style="font-size:17px;font-weight:900;color:#1D4ED8">{op}% 상대팀 💙</span>
-            </div>
-            <div class="VB-wrap" style="height:64px;margin-bottom:24px;border-radius:16px">
-                <div class="VB-l" style="width:{lp}%;font-size:17px">{"롯데" if lp>18 else ""}</div>
-                <div class="VB-r" style="font-size:17px">{"상대팀" if op>18 else ""}</div>
-            </div>""", unsafe_allow_html=True)
+        lotte_tags = "".join([f'<span style="display:inline-flex;align-items:center;background:#FEF2F2;color:#DC2626;border-radius:8px;padding:5px 11px;font-size:12px;font-weight:700;margin:3px">⚾ {n}</span>' for n in lv_names])
+        opp_tags   = "".join([f'<span style="display:inline-flex;align-items:center;background:#EFF6FF;color:#1D4ED8;border-radius:8px;padding:5px 11px;font-size:12px;font-weight:700;margin:3px">💙 {n}</span>' for n in ov_names])
 
-            lv = votes[votes["selected_team"]=="롯데"]["nickname"].tolist()
-            ov = votes[votes["selected_team"]=="상대팀"]["nickname"].tolist()
-            if lv:
-                tags = "".join([f'<span class="VTAG">⚾ {n}</span>' for n in lv])
-                st.markdown(f'<p style="font-size:14px;font-weight:800;color:#DC2626;margin-bottom:8px">🔴 롯데 응원단 ({len(lv)}명)</p><div style="margin-bottom:18px">{tags}</div>', unsafe_allow_html=True)
-            if ov:
-                tags = "".join([f'<span class="VTAG">💙 {n}</span>' for n in ov])
-                st.markdown(f'<p style="font-size:14px;font-weight:800;color:#1D4ED8;margin-bottom:8px">💙 상대팀 응원단 ({len(ov)}명)</p><div>{tags}</div>', unsafe_allow_html=True)
+        if tv > 0:
+            vote_bar = f"""
+<div style="display:flex;justify-content:space-between;margin-bottom:8px">
+  <span style="font-size:16px;font-weight:900;color:#DC2626">🔴 롯데 {vote_lp}%</span>
+  <span style="font-size:16px;font-weight:900;color:#1D4ED8">{vote_op}% {opp_name} 💙</span>
+</div>
+<div style="display:flex;height:60px;border-radius:16px;overflow:hidden;background:#F2F4F7;margin-bottom:20px">
+  <div style="width:{vote_lp}%;background:linear-gradient(90deg,#991B1B,#EF4444);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:15px">{"롯데" if vote_lp>18 else ""}</div>
+  <div style="flex:1;background:linear-gradient(90deg,#1E40AF,#3B82F6);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:15px">{opp_name if vote_op>18 else ""}</div>
+</div>
+<div style="text-align:center;font-size:12px;color:#8B95A1;font-weight:600;margin-bottom:20px">총 {tv}명 참여</div>"""
 
-            col = "#DC2626" if lp>60 else "#1D4ED8" if lp<40 else "#D97706"
-            msg = (f"팬들의 {lp}%가 롯데를 응원해요! 오늘도 이겨라!! 💪" if lp>60
-                   else f"팬들의 {op}%가 상대팀 응원. 역전의 명수 롯데 파이팅! ⚡" if lp<40
-                   else "팽팽한 예측! 명승부가 기대됩니다 🔥")
-            st.markdown(f'<div style="background:#F8F9FA;border-radius:14px;padding:16px 20px;margin-top:20px;border-left:4px solid {col}"><p style="font-size:14px;color:#333D4B;margin:0;font-weight:700;line-height:1.6">{msg}</p></div>', unsafe_allow_html=True)
+            col_v = "#DC2626" if vote_lp>60 else "#1D4ED8" if vote_lp<40 else "#D97706"
+            msg_v = (f"팬들의 {vote_lp}%가 롯데 승리를 예측해요! 💪" if vote_lp>60
+                     else f"팬들의 {vote_op}%가 {opp_name} 승리를 예측해요 🔥" if vote_lp<40
+                     else "팬들도 반반! 박빙의 명승부 예상 ⚡")
+            fan_comment = f'<div style="background:#F8F9FA;border-radius:12px;padding:14px 16px;margin-bottom:20px;border-left:4px solid {col_v}"><span style="font-size:14px;color:#333D4B;font-weight:700">{msg_v}</span></div>'
+
+            voter_section = ""
+            if lv_names:
+                voter_section += f'<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:800;color:#DC2626;margin-bottom:8px">🔴 롯데 응원단 ({len(lv_names)}명)</div><div>{lotte_tags}</div></div>'
+            if ov_names:
+                voter_section += f'<div><div style="font-size:13px;font-weight:800;color:#1D4ED8;margin-bottom:8px">💙 {opp_name} 응원단 ({len(ov_names)}명)</div><div>{opp_tags}</div></div>'
+
+            vote_content = vote_bar + fan_comment + voter_section
         else:
-            st.markdown('<div class="EMPTY" style="padding:64px 0"><div class="EMPTY-i">🎯</div><div class="EMPTY-t">아직 예측이 없어요</div><div class="EMPTY-s">왼쪽에서 첫 번째 예측자가 되어보세요! 👈</div></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            vote_content = '<div style="text-align:center;padding:52px 0;color:#8B95A1"><div style="font-size:44px;margin-bottom:12px">🗳️</div><div style="font-size:16px;font-weight:700;color:#4E5968;margin-bottom:6px">아직 예측이 없어요</div><div style="font-size:13px">왼쪽에서 첫 번째 예측자가 되어보세요!</div></div>'
+
+        html_card("📊 팬 투표 현황", vote_content, height=520)
+
+        # ── 참여 통계 카드
+        stat_body = f"""
+<div style="display:flex;gap:12px">
+  <div style="flex:1;background:#F8F9FA;border-radius:14px;padding:18px;text-align:center">
+    <div style="font-size:28px;font-weight:900;color:#191F28;line-height:1">{tv}</div>
+    <div style="font-size:12px;color:#8B95A1;font-weight:600;margin-top:6px">총 참여</div>
+  </div>
+  <div style="flex:1;background:#FEF2F2;border-radius:14px;padding:18px;text-align:center">
+    <div style="font-size:28px;font-weight:900;color:#DC2626;line-height:1">{vote_ln}</div>
+    <div style="font-size:12px;color:#DC2626;font-weight:600;margin-top:6px">롯데 응원</div>
+  </div>
+  <div style="flex:1;background:#EFF6FF;border-radius:14px;padding:18px;text-align:center">
+    <div style="font-size:28px;font-weight:900;color:#1D4ED8;line-height:1">{vote_on}</div>
+    <div style="font-size:12px;color:#1D4ED8;font-weight:600;margin-top:6px">{opp_name} 응원</div>
+  </div>
+</div>"""
+        html_card("📈 오늘 참여 통계", stat_body, height=140)
 
 
 # ── 푸터
