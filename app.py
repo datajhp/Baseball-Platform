@@ -1349,6 +1349,7 @@ with t_predict:
         st.markdown(f"""
         <div class="T-card">
             <div class="T-card-title">🗳️ 당신의 승부 예측은?</div>
+        <div class="T-card-title">닉네임</div>
         """, unsafe_allow_html=True)
         if not sb:
             st.warning("⚠️ 데이터베이스 연결이 필요합니다.")
