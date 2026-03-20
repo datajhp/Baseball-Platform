@@ -732,128 +732,150 @@ def db_add_vote(nick, team):
 # ══════════════════════════════════════════
 #  경기카드 렌더 함수
 # ══════════════════════════════════════════
-def state_badge(state, time_s):
-    if state == "진행중":
-        return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#EF4444;animation:blink 1.4s infinite"></span>진행중</span>'
-    elif state == "종료":
-        return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#F0FDF4;color:#15803D;border:1.5px solid #BBF7D0">종료</span>'
-    elif state == "취소":
-        return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#F9FAFB;color:#6B7684;border:1.5px solid #E5E8EB">취소</span>'
-    else:
-        t = f"⏰ {time_s}" if time_s else "예정"
-        return f'<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#EFF6FF;color:#1D4ED8;border:1.5px solid #BFDBFE">{t}</span>'
-
-
 def render_games_horizontal(games, show_pitcher=True):
+    """경기 카드 HTML 반환 — components.v1.html로 렌더링"""
     if not games:
-        return '<div style="text-align:center;padding:28px 0;color:#8B95A1"><div style="font-size:40px;margin-bottom:10px">🌙</div><div style="font-size:15px;font-weight:700;color:#4E5968;margin-bottom:5px">오늘은 경기가 없어요</div><div style="font-size:13px">내일을 기대해봐요!</div></div>'
+        return '<div style="text-align:center;padding:28px 0;color:#8B95A1;font-family:Pretendard,sans-serif"><div style="font-size:36px;margin-bottom:8px">🌙</div><div style="font-size:15px;font-weight:700;color:#4E5968;margin-bottom:4px">오늘은 경기가 없어요</div><div style="font-size:13px">내일을 기대해봐요!</div></div>'
 
     cards = ""
     for g in games:
         aw, hm = g["away"], g["home"]
         is_l   = g["is_lotte"]
-        bdg    = state_badge(g["state"], g["time"])
-        aw_logo = team_logo_html(aw, 48)
-        hm_logo = team_logo_html(hm, 48)
-        stad = g.get("stadium", "")
+        bdg    = state_badge_inline(g["state"], g["time"])
+        aw_url = TEAM_LOGO.get(aw, "")
+        hm_url = TEAM_LOGO.get(hm, "")
+        aw_img = f'<img src="{aw_url}" width="48" height="48" style="object-fit:contain;display:block">' if aw_url else f'<div style="width:48px;height:48px;border-radius:50%;background:#F2F4F7;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#6B7684">{aw[:2]}</div>'
+        hm_img = f'<img src="{hm_url}" width="48" height="48" style="object-fit:contain;display:block">' if hm_url else f'<div style="width:48px;height:48px;border-radius:50%;background:#F2F4F7;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#6B7684">{hm[:2]}</div>'
+        stad = g.get("stadium","")
 
-        # 점수
         if ":" in g["score"]:
-            parts = g["score"].split(":")
-            av, hv = int(parts[0]), int(parts[1])
-            ac = "#DC2626" if av > hv else "#9CA3AF" if av < hv else "#191F28"
-            hc = "#DC2626" if hv > av else "#9CA3AF" if hv < av else "#191F28"
-            score_html = f'<span style="font-size:26px;font-weight:900;color:{ac}">{av}</span><span style="font-size:18px;color:#E5E7EB;margin:0 4px">:</span><span style="font-size:26px;font-weight:900;color:{hc}">{hv}</span>'
+            p = g["score"].split(":")
+            av, hv = int(p[0]), int(p[1])
+            ac = "#DC2626" if av>hv else "#9CA3AF" if av<hv else "#191F28"
+            hc = "#DC2626" if hv>av else "#9CA3AF" if hv<av else "#191F28"
+            score_html = f'<span style="font-size:24px;font-weight:900;color:{ac};font-family:Pretendard,sans-serif">{av}</span><span style="font-size:16px;color:#E5E7EB;margin:0 4px">:</span><span style="font-size:24px;font-weight:900;color:{hc};font-family:Pretendard,sans-serif">{hv}</span>'
         else:
-            score_html = '<span style="font-size:14px;color:#D1D5DB;font-weight:600">vs</span>'
+            score_html = '<span style="font-size:13px;color:#D1D5DB;font-weight:600">vs</span>'
 
-        # 투수
         pit_html = ""
         if show_pitcher and g["state"] == "종료":
             rows = ""
-            for nm, val, col in [("승", g.get("win_pit",""), "#15803D"), ("패", g.get("lose_pit",""), "#DC2626"), ("세", g.get("save_pit",""), "#1D4ED8")]:
+            for nm, val, col in [("승", g.get("win_pit",""),"#15803D"),("패", g.get("lose_pit",""),"#DC2626"),("세", g.get("save_pit",""),"#1D4ED8")]:
                 if val:
-                    rows += f'<span style="font-size:10px;color:{col};font-weight:700">{nm} {val}</span>'
+                    rows += f'<span style="font-size:10px;color:{col};font-weight:700;font-family:Pretendard,sans-serif">{nm} {val}</span>'
             if rows:
                 pit_html = f'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px">{rows}</div>'
-        elif show_pitcher and g["state"] not in ("종료","취소"):
+        elif show_pitcher:
             sp = g.get("away_sp",""); hp = g.get("home_sp","")
             if sp or hp:
-                pit_html = f'<div style="font-size:10px;color:#9CA3AF;margin-top:6px">{sp} vs {hp}</div>'
+                pit_html = f'<div style="font-size:10px;color:#9CA3AF;margin-top:6px;font-family:Pretendard,sans-serif">{sp} vs {hp}</div>'
 
-        border = "border:2px solid #EF4444;box-shadow:0 4px 20px rgba(239,68,68,.15)" if is_l else "border:1.5px solid #ECEEF2"
-        cards += f'''<div style="background:#fff;border-radius:18px;padding:16px 12px;{border};min-width:155px;flex:1;max-width:210px;text-align:center">
-            <div style="font-size:10px;color:#9CA3AF;font-weight:600;margin-bottom:5px">{"🏟 "+stad if stad else "&nbsp;"}</div>
-            <div style="margin-bottom:8px">{bdg}</div>
-            <div style="display:flex;align-items:center;justify-content:center;gap:8px">
-                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
-                    {aw_logo}
-                    <span style="font-size:11px;font-weight:800;color:#191F28;margin-top:2px">{aw}</span>
-                </div>
-                <div style="min-width:56px;text-align:center">{score_html}</div>
-                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
-                    {hm_logo}
-                    <span style="font-size:11px;font-weight:800;color:#191F28;margin-top:2px">{hm}</span>
-                </div>
-            </div>
-            {pit_html}
-        </div>'''
-
+        border = "border:2.5px solid #EF4444;box-shadow:0 4px 20px rgba(239,68,68,.15)" if is_l else "border:1.5px solid #ECEEF2"
+        cards += f'''
+<div style="background:#fff;border-radius:18px;padding:16px 12px;{border};min-width:155px;flex:1;max-width:210px;text-align:center;font-family:Pretendard,sans-serif">
+  <div style="font-size:10px;color:#9CA3AF;font-weight:600;margin-bottom:5px">{"🏟 "+stad if stad else "&nbsp;"}</div>
+  <div style="margin-bottom:8px">{bdg}</div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+      {aw_img}
+      <span style="font-size:11px;font-weight:800;color:#191F28;margin-top:2px">{aw}</span>
+    </div>
+    <div style="min-width:52px;text-align:center">{score_html}</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+      {hm_img}
+      <span style="font-size:11px;font-weight:800;color:#191F28;margin-top:2px">{hm}</span>
+    </div>
+  </div>
+  {pit_html}
+</div>'''
     return f'<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px">{cards}</div>'
 
 
 def render_lotte_game_big(g):
     aw, hm  = g["away"], g["home"]
-    bdg     = state_badge(g["state"], g["time"])
-    aw_logo = team_logo_html(aw, 76)
-    hm_logo = team_logo_html(hm, 76)
+    bdg     = state_badge_inline(g["state"], g["time"])
+    aw_url  = TEAM_LOGO.get(aw, "")
+    hm_url  = TEAM_LOGO.get(hm, "")
+    aw_img  = f'<img src="{aw_url}" width="76" height="76" style="object-fit:contain;display:block">' if aw_url else f'<div style="width:76px;height:76px;background:#F2F4F7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#6B7684">{aw[:2]}</div>'
+    hm_img  = f'<img src="{hm_url}" width="76" height="76" style="object-fit:contain;display:block">' if hm_url else f'<div style="width:76px;height:76px;background:#F2F4F7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#6B7684">{hm[:2]}</div>'
     stad    = g.get("stadium","")
 
     if ":" in g["score"]:
         p = g["score"].split(":")
         av, hv = int(p[0]), int(p[1])
-        ac = "#DC2626" if av > hv else "#9CA3AF" if av < hv else "#191F28"
-        hc = "#DC2626" if hv > av else "#9CA3AF" if hv < av else "#191F28"
-        ascore = f'<div style="font-size:48px;font-weight:900;color:{ac};line-height:1">{av}</div>'
-        hscore = f'<div style="font-size:48px;font-weight:900;color:{hc};line-height:1">{hv}</div>'
+        ac = "#DC2626" if av>hv else "#9CA3AF" if av<hv else "#191F28"
+        hc = "#DC2626" if hv>av else "#9CA3AF" if hv<av else "#191F28"
+        ascore = f'<div style="font-size:46px;font-weight:900;color:{ac};line-height:1;font-family:Pretendard,sans-serif">{av}</div>'
+        hscore = f'<div style="font-size:46px;font-weight:900;color:{hc};line-height:1;font-family:Pretendard,sans-serif">{hv}</div>'
     else:
         ascore = '<div style="font-size:28px;font-weight:300;color:#D1D5DB">-</div>'
         hscore = '<div style="font-size:28px;font-weight:300;color:#D1D5DB">-</div>'
 
     pit_rows = ""
     if g["state"] == "종료":
-        for label, val, col in [("승리투수", g.get("win_pit",""), "#15803D"), ("패전투수", g.get("lose_pit",""), "#DC2626"), ("세이브", g.get("save_pit",""), "#1D4ED8")]:
+        for label, val, col in [("승리투수",g.get("win_pit",""),"#15803D"),("패전투수",g.get("lose_pit",""),"#DC2626"),("세이브",g.get("save_pit",""),"#1D4ED8")]:
             if val:
-                pit_rows += f'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-bottom:1px solid #F5F6F8"><span style="font-size:12px;color:#8B95A1;font-weight:600">{label}</span><span style="font-size:14px;font-weight:800;color:{col}">{val}</span></div>'
+                pit_rows += f'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-bottom:1px solid #F5F6F8;font-family:Pretendard,sans-serif"><span style="font-size:12px;color:#8B95A1;font-weight:600">{label}</span><span style="font-size:14px;font-weight:800;color:{col}">{val}</span></div>'
     else:
-        for label, val in [("원정 선발", g.get("away_sp","")), ("홈 선발", g.get("home_sp",""))]:
+        for label, val in [("원정 선발",g.get("away_sp","")),("홈 선발",g.get("home_sp",""))]:
             if val:
-                pit_rows += f'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-bottom:1px solid #F5F6F8"><span style="font-size:12px;color:#8B95A1;font-weight:600">{label}</span><span style="font-size:14px;font-weight:800;color:#333D4B">{val}</span></div>'
+                pit_rows += f'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-bottom:1px solid #F5F6F8;font-family:Pretendard,sans-serif"><span style="font-size:12px;color:#8B95A1;font-weight:600">{label}</span><span style="font-size:14px;font-weight:800;color:#333D4B">{val}</span></div>'
 
     pit_section = f'<div style="background:#F8F9FA;border-radius:14px;overflow:hidden;margin-top:18px">{pit_rows}</div>' if pit_rows else ""
 
-    return f'''<div style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border-radius:20px;padding:28px 20px">
-        <div style="text-align:center;margin-bottom:16px">{bdg}</div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:8px">
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px">
-                {aw_logo}
-                <div style="font-size:15px;font-weight:900;color:#191F28">{aw}</div>
-                <div style="font-size:11px;color:#6B7684;font-weight:600">원정</div>
-                {ascore}
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:40px">
-                <div style="font-size:20px;color:#D1D5DB;font-weight:300">:</div>
-                <div style="font-size:11px;color:#9CA3AF;font-weight:600;text-align:center">{"🏟 "+stad if stad else ""}</div>
-            </div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px">
-                {hm_logo}
-                <div style="font-size:15px;font-weight:900;color:#191F28">{hm}</div>
-                <div style="font-size:11px;color:#6B7684;font-weight:600">홈</div>
-                {hscore}
-            </div>
-        </div>
-        {pit_section}
-    </div>'''
+    return f'''
+<div style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border-radius:20px;padding:28px 20px;font-family:Pretendard,sans-serif">
+  <div style="text-align:center;margin-bottom:16px">{bdg}</div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px">
+      {aw_img}
+      <div style="font-size:15px;font-weight:900;color:#191F28">{aw}</div>
+      <div style="font-size:11px;color:#6B7684;font-weight:600">원정</div>
+      {ascore}
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:36px">
+      <div style="font-size:20px;color:#D1D5DB;font-weight:300">:</div>
+      <div style="font-size:10px;color:#9CA3AF;font-weight:600;text-align:center">{"🏟 "+stad if stad else ""}</div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px">
+      {hm_img}
+      <div style="font-size:15px;font-weight:900;color:#191F28">{hm}</div>
+      <div style="font-size:11px;color:#6B7684;font-weight:600">홈</div>
+      {hscore}
+    </div>
+  </div>
+  {pit_section}
+</div>'''
+
+
+def state_badge_inline(state, time_s):
+    """CSS 클래스 없이 완전 인라인 스타일 뱃지"""
+    base = "display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;font-family:Pretendard,sans-serif"
+    if state == "진행중":
+        dot = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#EF4444"></span>'
+        return f'<span style="{base};background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA">{dot}진행중</span>'
+    elif state == "종료":
+        return f'<span style="{base};background:#F0FDF4;color:#15803D;border:1.5px solid #BBF7D0">종료</span>'
+    elif state == "취소":
+        return f'<span style="{base};background:#F9FAFB;color:#6B7684;border:1.5px solid #E5E8EB">취소</span>'
+    else:
+        t = f"⏰ {time_s}" if time_s else "예정"
+        return f'<span style="{base};background:#EFF6FF;color:#1D4ED8;border:1.5px solid #BFDBFE">{t}</span>'
+
+
+def card_html(title, body, extra_style=""):
+    """카드 래퍼 — components.v1.html용 완전한 HTML 문서"""
+    return f'''<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>*{{box-sizing:border-box;margin:0;padding:0;font-family:Pretendard,sans-serif}}body{{background:transparent;padding:0}}</style>
+</head><body>
+<div style="background:#fff;border-radius:20px;padding:22px;border:1px solid #F0F2F5;box-shadow:0 2px 12px rgba(0,0,0,.04);{extra_style}">
+  <div style="font-size:17px;font-weight:800;color:#191F28;margin-bottom:18px;display:flex;align-items:center;gap:8px">{title}</div>
+  {body}
+</div>
+</body></html>'''
 
 
 # ══════════════════════════════════════════
@@ -867,6 +889,41 @@ st.markdown(f"""
     <div class="HERO-live"><span class="ldot"></span>경기 정보 실시간 업데이트 중</div>
 </div>
 """, unsafe_allow_html=True)
+
+
+def html_card(title_html, body_html, height=None):
+    """
+    st.components.v1.html()을 사용해 img 등 Streamlit 마크다운 sanitizer를 우회.
+    height 미지정 시 내용에 맞게 자동 조정.
+    """
+    css = """
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    * { font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif; box-sizing:border-box; margin:0; padding:0; }
+    body { background:transparent; padding:0; margin:0; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+    a { text-decoration:none; }
+    """
+    card_style = "background:#fff;border-radius:20px;padding:22px;border:1px solid #F0F2F5;box-shadow:0 2px 12px rgba(0,0,0,.04);font-family:'Pretendard',sans-serif"
+    title_style = "font-size:17px;font-weight:800;color:#191F28;margin-bottom:18px;display:flex;align-items:center;gap:8px;letter-spacing:-.4px"
+    h = height or "auto"
+    scrolling = "no" if not height else "no"
+    full_html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+    <style>{css}</style></head>
+    <body>
+    <div style="{card_style}">
+        <div style="{title_style}">{title_html}</div>
+        {body_html}
+    </div>
+    <script>
+    // 높이 자동 조정
+    window.onload = function() {{
+        var h = document.body.scrollHeight;
+        window.parent.postMessage({{type:'streamlit:setFrameHeight', height: h+8}}, '*');
+    }};
+    </script>
+    </body></html>"""
+    est_height = height or 300
+    st.components.v1.html(full_html, height=est_height, scrolling=False)
 
 
 # ══════════════════════════════════════════
@@ -918,40 +975,46 @@ with t_home:
 
     # ─ 가운데
     with cC:
-        # 오늘 경기 — 단일 호출
+        # 오늘 경기 — components.v1.html로 img sanitizer 우회
         game_html = render_games_horizontal(today_games, show_pitcher=True)
-        nav_a = f'<a href="https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime("%Y%m%d")}" target="_blank" style="display:block;text-align:center;margin-top:14px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">📋 네이버 스포츠 오늘 경기</a>'
-        st.markdown(f'<div class="T-card"><div class="T-card-title">📅 오늘의 KBO 경기 <span style="font-size:13px;color:#8B95A1;font-weight:500">· {today.strftime("%m/%d")}</span></div>{game_html}{nav_a}</div>', unsafe_allow_html=True)
+        nav_a = f'<div style="margin-top:14px"><a href="https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime("%Y%m%d")}" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px">📋 네이버 스포츠 오늘 경기</a></div>'
+        n_games = len(today_games)
+        card_h = 220 if n_games == 0 else max(220, 170 + n_games * 10)
+        html_card(
+            f'📅 오늘의 KBO 경기 <span style="font-size:13px;color:#8B95A1;font-weight:500">· {today.strftime("%m/%d")}</span>',
+            game_html + nav_a,
+            height=card_h
+        )
 
-        # 뉴스 — 단일 호출
+        # 뉴스 — 마크다운 사용 가능 (img 없음)
         if news_list:
             news_items = ""
             for i, n in enumerate(news_list[:8], 1):
-                news_items += f'<div class="N-item"><span class="N-num">{i}</span><div><div class="N-title"><a href="{n["url"]}" target="_blank">{n["title"]}</a></div><div class="N-press">{n.get("press","")} · {n.get("pub","")}</div></div></div>'
+                news_items += f'<div style="padding:12px 0;border-bottom:1px solid #F2F4F7;display:flex;gap:10px"><span style="min-width:20px;height:20px;border-radius:5px;background:#F2F4F7;color:#8B95A1;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px">{i}</span><div><a href="{n["url"]}" target="_blank" style="font-size:14px;font-weight:600;color:#191F28;text-decoration:none;line-height:1.5">{n["title"]}</a><div style="font-size:11px;color:#B0B8C1;margin-top:3px">{n.get("press","")} · {n.get("pub","")}</div></div></div>'
             news_body = news_items
         else:
-            news_body = '<div class="EMPTY" style="padding:20px 0"><div class="EMPTY-i">📡</div><div class="EMPTY-t">뉴스를 불러오지 못했어요</div></div>'
-        news_more = '<a href="https://sports.news.naver.com/kbaseball/news/index?type=team&teamCode=LT" target="_blank" style="display:block;text-align:center;margin-top:12px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">🔗 네이버 스포츠 뉴스 더보기</a>'
-        st.markdown(f'<div class="T-card"><div class="T-card-title">📰 롯데 자이언츠 최신 뉴스</div>{news_body}{news_more}</div>', unsafe_allow_html=True)
+            news_body = '<div style="text-align:center;padding:20px 0;color:#8B95A1">📡 뉴스를 불러오지 못했어요</div>'
+        news_more = f'<div style="margin-top:12px"><a href="https://sports.news.naver.com/kbaseball/news/index?type=team&teamCode=LT" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px">🔗 네이버 스포츠 뉴스 더보기</a></div>'
+        html_card("📰 롯데 자이언츠 최신 뉴스", news_body + news_more, height=480)
 
     # ─ 오른쪽
     with cR:
-        # 하이라이트 — 단일 호출
+        # 하이라이트
         if highlights:
             yt_items = ""
             for v in highlights[:2]:
                 vid = v["id"]
                 thumb = v.get("thumb") or f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
-                yt_items += f'<a class="YT-card" href="https://www.youtube.com/watch?v={vid}" target="_blank"><img class="YT-thumb" src="{thumb}" onerror="this.src=\'https://img.youtube.com/vi/{vid}/hqdefault.jpg\'" alt=""><div><div class="YT-ttl">{v.get("title","")[:52]}</div><div class="YT-meta">{v.get("channel","")} · {v.get("time","")}</div></div></a>'
+                yt_items += f'<a href="https://www.youtube.com/watch?v={vid}" target="_blank" style="display:flex;gap:12px;background:#fff;border:1.5px solid #ECEEF2;border-radius:14px;padding:12px;margin-bottom:10px;text-decoration:none"><img src="{thumb}" width="108" height="66" style="object-fit:cover;border-radius:8px;flex-shrink:0"><div><div style="font-size:13px;font-weight:700;color:#191F28;line-height:1.5;margin-bottom:4px">{v.get("title","")[:52]}</div><div style="font-size:11px;color:#8B95A1">{v.get("channel","")} · {v.get("time","")}</div></div></a>'
             hl_body = yt_items
         else:
-            hl_body = '<div class="EMPTY" style="padding:20px 0"><div class="EMPTY-i">🎬</div><div class="EMPTY-t">영상 로딩 실패</div></div>'
-        yt_more = '<a href="https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D" target="_blank" style="display:block;text-align:center;margin-top:12px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">▶ YouTube 더보기</a>'
-        st.markdown(f'<div class="T-card"><div class="T-card-title">🎬 최신 하이라이트</div>{hl_body}{yt_more}</div>', unsafe_allow_html=True)
+            hl_body = '<div style="text-align:center;padding:20px 0;color:#8B95A1;font-family:Pretendard,sans-serif">🎬 영상 로딩 실패</div>'
+        yt_more = '<a href="https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D" target="_blank" style="display:block;text-align:center;margin-top:4px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif">▶ YouTube 더보기</a>'
+        html_card("🎬 최신 하이라이트", hl_body + yt_more, height=320)
 
-        # 티켓 — 단일 호출
-        ticket_body = '<p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.8">일반 예매 오픈<br>경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong></p><a href="https://ticket.giantsclub.com/loginForm.do" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none;margin-bottom:8px">🎫 예매 페이지</a><a href="https://www.giantsclub.com/html/?pcode=257" target="_blank" style="display:block;text-align:center;padding:10px;background:#F2F4F7;color:#333D4B;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">📋 시즌 일정</a>'
-        st.markdown(f'<div class="T-card"><div class="T-card-title">🎟️ 티켓 예매</div>{ticket_body}</div>', unsafe_allow_html=True)
+        # 티켓
+        ticket_body = '<p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.8;font-family:Pretendard,sans-serif">일반 예매 오픈<br>경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong></p><a href="https://ticket.giantsclub.com/loginForm.do" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif;margin-bottom:8px">🎫 예매 페이지</a><a href="https://www.giantsclub.com/html/?pcode=257" target="_blank" style="display:block;text-align:center;padding:10px;background:#F2F4F7;color:#333D4B;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif">📋 시즌 일정</a>'
+        html_card("🎟️ 티켓 예매", ticket_body, height=200)
 
 
 # ════════════════════════════════════════════════════
@@ -965,17 +1028,19 @@ with t_game:
     gc1, gc2 = st.columns([3, 2], gap="medium")
 
     with gc1:
-        # 오늘 전체 경기 — 단일 호출
+        # 오늘 전체 경기
         gh = render_games_horizontal(tg, show_pitcher=True)
-        na = f'<a href="https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime("%Y%m%d")}" target="_blank" style="display:block;text-align:center;margin-top:14px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">📋 네이버 스포츠 오늘 경기</a>'
-        st.markdown(f'<div class="T-card"><div class="T-card-title">📅 오늘 전체 경기</div>{gh}{na}</div>', unsafe_allow_html=True)
+        na = f'<div style="margin-top:14px"><a href="https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime("%Y%m%d")}" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif">📋 네이버 스포츠 오늘 경기</a></div>'
+        html_card(f'📅 오늘 전체 경기', gh + na, height=300)
 
-        # 롯데 오늘 경기 빅 카드 — 단일 호출
+        # 롯데 오늘 경기 빅 카드
         if lotg:
             big = render_lotte_game_big(lotg[0])
+            big_h = 380 if lotg[0].get("win_pit") or lotg[0].get("away_sp") else 300
         else:
-            big = '<div class="EMPTY" style="padding:32px 0"><div class="EMPTY-i">🌙</div><div class="EMPTY-t">오늘 롯데 경기 없음</div><div class="EMPTY-s">다음 경기를 기대해요!</div></div>'
-        st.markdown(f'<div class="T-card"><div class="T-card-title">⚾ 오늘 롯데 자이언츠 경기</div>{big}</div>', unsafe_allow_html=True)
+            big = '<div style="text-align:center;padding:32px 0;color:#8B95A1;font-family:Pretendard,sans-serif"><div style="font-size:36px;margin-bottom:8px">🌙</div><div style="font-size:15px;font-weight:700;color:#4E5968">오늘 롯데 경기 없음</div></div>'
+            big_h = 180
+        html_card("⚾ 오늘 롯데 자이언츠 경기", big, height=big_h)
 
         # 문자 중계 (iframe은 별도 컴포넌트라 단일 호출 불가)
         if lotg and lotg[0].get("game_id"):
@@ -993,16 +1058,16 @@ with t_game:
             for v in hl[:3]:
                 vid = v["id"]
                 thumb = v.get("thumb") or f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
-                yt_items += f'<a class="YT-card" href="https://www.youtube.com/watch?v={vid}" target="_blank"><img style="width:104px;height:62px;object-fit:cover;border-radius:8px;flex-shrink:0" src="{thumb}" onerror="this.src=\'https://img.youtube.com/vi/{vid}/hqdefault.jpg\'" alt=""><div><div class="YT-ttl">{v.get("title","")[:46]}</div><div class="YT-meta">{v.get("channel","")} · {v.get("time","")}</div></div></a>'
+                yt_items += f'<a href="https://www.youtube.com/watch?v={vid}" target="_blank" style="display:flex;gap:12px;background:#fff;border:1.5px solid #ECEEF2;border-radius:14px;padding:12px;margin-bottom:10px;text-decoration:none"><img src="{thumb}" width="104" height="62" style="object-fit:cover;border-radius:8px;flex-shrink:0"><div><div style="font-size:12px;font-weight:700;color:#191F28;line-height:1.5">{v.get("title","")[:46]}</div><div style="font-size:11px;color:#8B95A1;margin-top:3px">{v.get("channel","")} · {v.get("time","")}</div></div></a>'
             hl_body = yt_items
         else:
-            hl_body = '<div class="EMPTY" style="padding:20px 0"><div class="EMPTY-i">🎬</div><div class="EMPTY-t">영상을 불러오지 못했어요</div></div>'
-        yt_more2 = '<a href="https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D" target="_blank" style="display:block;text-align:center;margin-top:12px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">▶ YouTube 더보기</a>'
-        st.markdown(f'<div class="T-card"><div class="T-card-title">🎬 최신 하이라이트</div>{hl_body}{yt_more2}</div>', unsafe_allow_html=True)
+            hl_body = '<div style="text-align:center;padding:20px 0;color:#8B95A1;font-family:Pretendard,sans-serif">🎬 영상을 불러오지 못했어요</div>'
+        yt_more2 = '<a href="https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D" target="_blank" style="display:block;text-align:center;margin-top:4px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif">▶ YouTube 더보기</a>'
+        html_card("🎬 최신 하이라이트", hl_body + yt_more2, height=380)
 
-        # 티켓 — 단일 호출
-        ticket2 = '<p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.8">일반 예매 오픈<br>경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong></p><a href="https://ticket.giantsclub.com/loginForm.do" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none;margin-bottom:8px">🎫 예매 페이지</a><a href="https://www.giantsclub.com/html/?pcode=257" target="_blank" style="display:block;text-align:center;padding:10px;background:#F2F4F7;color:#333D4B;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">📋 시즌 일정</a>'
-        st.markdown(f'<div class="T-card"><div class="T-card-title">🎟️ 티켓 예매</div>{ticket2}</div>', unsafe_allow_html=True)
+        # 티켓 — html_card
+        ticket2 = '<p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.8;font-family:Pretendard,sans-serif">일반 예매 오픈<br>경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong></p><a href="https://ticket.giantsclub.com/loginForm.do" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif;margin-bottom:8px">🎫 예매 페이지</a><a href="https://www.giantsclub.com/html/?pcode=257" target="_blank" style="display:block;text-align:center;padding:10px;background:#F2F4F7;color:#333D4B;border-radius:12px;font-weight:700;font-size:14px;font-family:Pretendard,sans-serif">📋 시즌 일정</a>'
+        html_card("🎟️ 티켓 예매", ticket2, height=200)
 
 
 # ════════════════════════════════════════════════════
