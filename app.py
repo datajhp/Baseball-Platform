@@ -194,6 +194,15 @@ div[data-testid="stRadio"] input[type="radio"] { accent-color: #3182F6 !importan
 div[data-testid="stAlert"] { border-radius: 12px !important; }
 div[data-testid="stAlert"] p { color: inherit !important; }
 
+/* ── container border (st.container(border=True)) ── */
+div[data-testid="stVerticalBlockBorderWrapper"] > div {
+    border: 2px solid #E5E8EB !important;
+    border-radius: 20px !important;
+    padding: 24px !important;
+    background: #ffffff !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,.04) !important;
+}
+
 /* ── 애니메이션 ── */
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 .ldot {
@@ -387,16 +396,16 @@ HDR = {
 # ══════════════════════════════════════════
 # 네이버 스포츠 CDN (안정적, CORS 없음)
 TEAM_LOGO = {
-    "LG":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_LG.png",
-    "SSG": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_SK.png",
-    "두산": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_OB.png",
-    "삼성": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_SS.png",
-    "NC":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_NC.png",
-    "롯데": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_LT.png",
-    "키움": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_WO.png",
-    "KT":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_KT.png",
-    "KIA": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_HT.png",
-    "한화": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_HH.png",
+    "LG":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LG.png",
+    "SSG": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SK.png",
+    "두산": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/OB.png",
+    "삼성": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SS.png",
+    "NC":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/NC.png",
+    "롯데": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LT.png",
+    "키움": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/WO.png",
+    "KT":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/KT.png",
+    "KIA": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HT.png",
+    "한화": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HH.png",
 }
 
 def team_logo_html(team_name, size=52):
@@ -1323,7 +1332,7 @@ with t_predict:
 
         ai_body = f"""
 <div style="text-align:center;padding:8px 0 4px">
-  <div style="font-size:13px;color:#8B95A1;font-weight:600;margin-bottom:16px">AI 예측</div>
+  <div style="font-size:13px;color:#8B95A1;font-weight:600;margin-bottom:16px">순위표 승률 기반 AI 예측</div>
   <div style="display:flex;align-items:flex-end;justify-content:center;gap:16px;margin-bottom:16px">
     <div style="text-align:center">
       <div style="font-size:42px;font-weight:900;color:#DC2626;line-height:1">{ai_lotte_pct}%</div>
@@ -1332,7 +1341,7 @@ with t_predict:
     <div style="font-size:22px;color:#E5E7EB;font-weight:300;padding-bottom:12px">:</div>
     <div style="text-align:center">
       <div style="font-size:42px;font-weight:900;color:#1D4ED8;line-height:1">{ai_opp_pct}%</div>
-      <div style="font-size:12px;color:#1D4ED8;font-weight:700;margin-top:4px">🔵 {opp_name}</div>
+      <div style="font-size:12px;color:#1D4ED8;font-weight:700;margin-top:4px">💙 {opp_name}</div>
     </div>
   </div>
   <div style="height:10px;border-radius:999px;overflow:hidden;background:#F2F4F7;margin-bottom:14px">
@@ -1346,34 +1355,29 @@ with t_predict:
         html_card("🤖 AI 승리 예측", ai_body, height=280)
 
         # ── 투표 입력 카드
-        st.markdown(f"""
-        <div class="T-card">
-            <div class="T-card-title">🗳️ 당신의 승부 예측은?</div>
-        <div class="T-card-title">닉네임</div>
-        """, unsafe_allow_html=True)
         if not sb:
             st.warning("⚠️ 데이터베이스 연결이 필요합니다.")
         else:
-            pn = st.text_input("닉네임", placeholder="닉네임을 입력하세요", key="pn", label_visibility="collapsed")
-            pt = st.radio(
-                "예측",
-                [f"🔴 롯데 자이언츠 이겨라!!", f"💙 {opp_name} 이길 것 같아요"],
-                label_visibility="collapsed"
-            )
-            if st.button("🎯  예측 제출하기", type="primary", use_container_width=True):
-                if not pn.strip():
-                    st.warning("닉네임을 입력해주세요.")
-                elif tv > 0 and pn.strip() in pred_votes["nickname"].values:
-                    st.warning("이미 오늘 예측을 완료했어요! 😊")
-                else:
-                    team_val = "롯데" if "롯데" in pt else "상대팀"
-                    if db_add_vote(pn.strip(), team_val):
-                        st.success(f"✅ {pn.strip()}님의 예측이 등록됐어요!")
-                        st.balloons(); st.rerun()
+            with st.container(border=True):
+                st.markdown('<p style="font-size:17px;font-weight:800;color:#191F28;margin:0 0 16px;letter-spacing:-.3px">🗳️ 당신의 승부 예측은?</p>', unsafe_allow_html=True)
+                pn = st.text_input("닉네임", placeholder="닉네임을 입력하세요", key="pn")
+                pt = st.radio(
+                    "팀 선택",
+                    [f"🔴 롯데 자이언츠 이겨라!!", f"💙 {opp_name} 이길 것 같아요"],
+                    label_visibility="collapsed"
+                )
+                if st.button("🎯  예측 제출하기", type="primary", use_container_width=True):
+                    if not pn.strip():
+                        st.warning("닉네임을 입력해주세요.")
+                    elif tv > 0 and pn.strip() in pred_votes["nickname"].values:
+                        st.warning("이미 오늘 예측을 완료했어요! 😊")
                     else:
-                        st.error("등록에 실패했습니다.")
-        st.markdown('</div>', unsafe_allow_html=True)
-
+                        team_val = "롯데" if "롯데" in pt else "상대팀"
+                        if db_add_vote(pn.strip(), team_val):
+                            st.success(f"✅ {pn.strip()}님의 예측이 등록됐어요!")
+                            st.balloons(); st.rerun()
+                        else:
+                            st.error("등록에 실패했습니다.")
 
     with pr2:
         # ── 팬 투표 현황 카드
