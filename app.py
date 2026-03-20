@@ -382,6 +382,42 @@ HDR = {
     "Referer": "https://www.koreabaseball.com/",
 }
 
+# ══════════════════════════════════════════
+#  팀 로고 (KBO 공식 엠블럼)
+# ══════════════════════════════════════════
+TEAM_LOGO = {
+    "LG":  "https://www.koreabaseball.com/file/team/logo/bi_LG.png",
+    "SSG": "https://www.koreabaseball.com/file/team/logo/bi_SK.png",
+    "두산": "https://www.koreabaseball.com/file/team/logo/bi_OB.png",
+    "삼성": "https://www.koreabaseball.com/file/team/logo/bi_SS.png",
+    "NC":  "https://www.koreabaseball.com/file/team/logo/bi_NC.png",
+    "롯데": "https://www.koreabaseball.com/file/team/logo/bi_LT.png",
+    "키움": "https://www.koreabaseball.com/file/team/logo/bi_WO.png",
+    "KT":  "https://www.koreabaseball.com/file/team/logo/bi_KT.png",
+    "KIA": "https://www.koreabaseball.com/file/team/logo/bi_HT.png",
+    "한화": "https://www.koreabaseball.com/file/team/logo/bi_HH.png",
+}
+# Naver fallback
+TEAM_LOGO_NV = {
+    "LG":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LG.png",
+    "SSG": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SK.png",
+    "두산": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/OB.png",
+    "삼성": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SS.png",
+    "NC":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/NC.png",
+    "롯데": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LT.png",
+    "키움": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/WO.png",
+    "KT":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/KT.png",
+    "KIA": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HT.png",
+    "한화": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HH.png",
+}
+
+def team_logo_html(team_name, size=52):
+    primary = TEAM_LOGO.get(team_name, "")
+    fallback = TEAM_LOGO_NV.get(team_name, "")
+    if not primary:
+        return f'<div style="width:{size}px;height:{size}px;border-radius:50%;background:#F2F4F7;display:flex;align-items:center;justify-content:center;font-size:{size//3}px;font-weight:800;color:#8B95A1">{team_name[:2]}</div>'
+    return f'<img src="{primary}" onerror="this.src=\'{fallback}\'" alt="{team_name}" style="width:{size}px;height:{size}px;object-fit:contain">'
+
 
 # ══════════════════════════════════════════
 #  스크래핑 함수
@@ -467,6 +503,13 @@ def get_today_games():
                         "away": away, "home": home, "score": score,
                         "time": time_s, "stadium": stad, "state": state,
                         "is_lotte": "롯데" in [away, home],
+                        "win_pit":  g.get("W_PIT_P_NM", ""),
+                        "lose_pit": g.get("L_PIT_P_NM", ""),
+                        "save_pit": g.get("SV_PIT_P_NM", ""),
+                        "away_sp":  g.get("T_PIT_P_NM", ""),
+                        "home_sp":  g.get("B_PIT_P_NM", ""),
+                        "inning":   g.get("GAME_INN_NO", ""),
+                        "game_id":  g.get("G_ID", ""),
                     })
     except Exception:
         pass
@@ -698,6 +741,8 @@ def db_add_vote(nick, team):
 # ══════════════════════════════════════════
 #  헬퍼 — 경기 상태 뱃지
 # ══════════════════════════════════════════
+#  경기카드 렌더 함수
+# ══════════════════════════════════════════
 def state_badge(state, time_s):
     if state == "진행중":
         return f'<span class="S-live"><span class="ldot"></span>진행중</span>'
@@ -707,6 +752,149 @@ def state_badge(state, time_s):
         return '<span class="S-cancel">취소</span>'
     else:
         return f'<span class="S-sched">{"⏰ "+time_s if time_s else "예정"}</span>'
+
+
+def render_games_horizontal(games, show_pitcher=True):
+    """KBO 홈페이지처럼 경기를 가로로 나열하는 카드"""
+    if not games:
+        return '<div class="EMPTY" style="padding:28px 0"><div class="EMPTY-i">🌙</div><div class="EMPTY-t">오늘은 경기가 없어요</div><div class="EMPTY-s">내일을 기대해봐요!</div></div>'
+
+    cards = ""
+    for g in games:
+        aw, hm = g["away"], g["home"]
+        is_l   = g["is_lotte"]
+        bdg    = state_badge(g["state"], g["time"])
+        aw_logo = team_logo_html(aw, 52)
+        hm_logo = team_logo_html(hm, 52)
+
+        # 점수 색상 — 이긴 팀 강조
+        aw_score, hm_score = "", ""
+        if ":" in g["score"]:
+            parts = g["score"].split(":")
+            av, hv = int(parts[0]), int(parts[1])
+            aw_score = f'<span style="font-size:28px;font-weight:900;color:{"#DC2626" if av>hv else "#8B95A1" if av<hv else "#191F28"}">{av}</span>'
+            hm_score = f'<span style="font-size:28px;font-weight:900;color:{"#DC2626" if hv>av else "#8B95A1" if hv<av else "#191F28"}">{hv}</span>'
+            score_html = f'{aw_score}<span style="font-size:20px;color:#CBD5E1;margin:0 6px;font-weight:300">:</span>{hm_score}'
+        else:
+            score_html = f'<span style="font-size:16px;color:#CBD5E1;font-weight:600">vs</span>'
+
+        # 투수 정보
+        pit_html = ""
+        if show_pitcher and g["state"] == "종료":
+            w = g.get("win_pit",""); l = g.get("lose_pit",""); sv = g.get("save_pit","")
+            parts_pit = []
+            if w:  parts_pit.append(f'<span style="color:#15803D;font-weight:700">승 {w}</span>')
+            if l:  parts_pit.append(f'<span style="color:#DC2626;font-weight:700">패 {l}</span>')
+            if sv: parts_pit.append(f'<span style="color:#1D4ED8;font-weight:700">세 {sv}</span>')
+            if parts_pit:
+                pit_html = f'<div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;font-size:11px">{" ".join(parts_pit)}</div>'
+        elif show_pitcher and g["state"] in ("", "예정"):
+            asp = g.get("away_sp",""); hsp = g.get("home_sp","")
+            if asp or hsp:
+                pit_html = f'<div style="font-size:11px;color:#8B95A1;margin-top:6px;text-align:center">{asp} vs {hsp}</div>'
+
+        border = "border:2px solid #EF4444;" if is_l else "border:1.5px solid #ECEEF2;"
+        shadow = "box-shadow:0 4px 20px rgba(239,68,68,.15);" if is_l else ""
+
+        cards += f"""
+        <div style="background:#fff;border-radius:18px;padding:18px 14px;{border}{shadow}
+                    min-width:160px;flex:1;max-width:220px;text-align:center;transition:all .2s">
+            <div style="font-size:11px;color:#8B95A1;font-weight:600;margin-bottom:6px">
+                {'🏟 '+g['stadium'] if g['stadium'] else ''}
+            </div>
+            <div style="margin-bottom:8px">{bdg}</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex:1">
+                    {aw_logo}
+                    <span style="font-size:12px;font-weight:800;color:#191F28;margin-top:2px">{aw}</span>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:60px">
+                    {score_html}
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex:1">
+                    {hm_logo}
+                    <span style="font-size:12px;font-weight:800;color:#191F28;margin-top:2px">{hm}</span>
+                </div>
+            </div>
+            {pit_html}
+        </div>"""
+
+    return f"""
+    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;
+                scrollbar-width:thin;scrollbar-color:#E5E8EB transparent">
+        {cards}
+    </div>"""
+
+
+def render_lotte_game_big(g):
+    """롯데 경기를 크게 보여주는 카드"""
+    aw, hm  = g["away"], g["home"]
+    bdg     = state_badge(g["state"], g["time"])
+    aw_logo = team_logo_html(aw, 80)
+    hm_logo = team_logo_html(hm, 80)
+
+    aw_score_val, hm_score_val = "", ""
+    if ":" in g["score"]:
+        p = g["score"].split(":")
+        av, hv = int(p[0]), int(p[1])
+        aw_col = "#DC2626" if av > hv else "#8B95A1" if av < hv else "#191F28"
+        hm_col = "#DC2626" if hv > av else "#8B95A1" if hv < av else "#191F28"
+        aw_score_val = f'<div style="font-size:52px;font-weight:900;color:{aw_col};line-height:1">{av}</div>'
+        hm_score_val = f'<div style="font-size:52px;font-weight:900;color:{hm_col};line-height:1">{hv}</div>'
+    else:
+        aw_score_val = f'<div style="font-size:28px;font-weight:500;color:#CBD5E1">-</div>'
+        hm_score_val = f'<div style="font-size:28px;font-weight:500;color:#CBD5E1">-</div>'
+
+    # 투수 정보
+    pit_rows = ""
+    if g["state"] == "종료":
+        for label, name, color in [
+            ("승리투수", g.get("win_pit",""),  "#15803D"),
+            ("패전투수", g.get("lose_pit",""), "#DC2626"),
+            ("세이브",  g.get("save_pit",""), "#1D4ED8"),
+        ]:
+            if name:
+                pit_rows += f"""
+                <div style="display:flex;justify-content:space-between;align-items:center;
+                            padding:9px 16px;border-bottom:1px solid #F5F6F8">
+                    <span style="font-size:12px;color:#8B95A1;font-weight:600">{label}</span>
+                    <span style="font-size:14px;font-weight:800;color:{color}">{name}</span>
+                </div>"""
+    else:
+        for label, name in [("원정 선발", g.get("away_sp","")), ("홈 선발", g.get("home_sp",""))]:
+            if name:
+                pit_rows += f"""
+                <div style="display:flex;justify-content:space-between;align-items:center;
+                            padding:9px 16px;border-bottom:1px solid #F5F6F8">
+                    <span style="font-size:12px;color:#8B95A1;font-weight:600">{label}</span>
+                    <span style="font-size:14px;font-weight:800;color:#333D4B">{name}</span>
+                </div>"""
+
+    pit_section = f'<div style="background:#F8F9FA;border-radius:14px;overflow:hidden;margin-top:18px">{pit_rows}</div>' if pit_rows else ""
+
+    return f"""
+    <div style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border-radius:20px;padding:28px 24px">
+        <div style="text-align:center;margin-bottom:16px">{bdg}</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px">
+                {aw_logo}
+                <div style="font-size:16px;font-weight:900;color:#191F28">{aw}</div>
+                <div style="font-size:11px;color:#6B7684;font-weight:600">원정</div>
+                {aw_score_val}
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:48px">
+                <div style="font-size:22px;color:#CBD5E1;font-weight:300;line-height:1">:</div>
+                <div style="font-size:12px;color:#8B95A1;font-weight:600">{'🏟 '+g['stadium'] if g['stadium'] else ''}</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px">
+                {hm_logo}
+                <div style="font-size:16px;font-weight:900;color:#191F28">{hm}</div>
+                <div style="font-size:11px;color:#6B7684;font-weight:600">홈</div>
+                {hm_score_val}
+            </div>
+        </div>
+        {pit_section}
+    </div>"""
 
 
 # ══════════════════════════════════════════
@@ -797,29 +985,10 @@ with t_home:
 
     # ─ 가운데
     with cC:
-        # 오늘 경기
+        # 오늘 경기 — 가로 카드
         st.markdown(f'<div class="T-card"><div class="T-card-title">📅 오늘의 KBO 경기 <span style="font-size:13px;color:#8B95A1;font-weight:500">· {today.strftime("%m/%d")}</span></div>', unsafe_allow_html=True)
-        if today_games:
-            for g in today_games:
-                aw, hm = g["away"], g["home"]
-                is_l = g["is_lotte"]
-                bdg  = state_badge(g["state"], g["time"])
-                st.markdown(f"""
-                <div class="G-card {'lotte' if is_l else ''}">
-                    <div style="display:flex;align-items:center;justify-content:center;gap:20px;flex:1">
-                        <span class="G-team" style="min-width:56px;text-align:right">{aw}</span>
-                        <div style="text-align:center">
-                            <div class="G-score">{g['score']}</div>
-                            <div style="margin-top:7px;display:flex;gap:6px;justify-content:center;align-items:center">
-                                {bdg}
-                                <span class="G-meta">{'🏟 '+g['stadium'] if g['stadium'] else ''}</span>
-                            </div>
-                        </div>
-                        <span class="G-team" style="min-width:56px">{hm}</span>
-                    </div>
-                </div>""", unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="EMPTY" style="padding:28px 0"><div class="EMPTY-i">🌙</div><div class="EMPTY-t">오늘은 경기가 없어요</div><div class="EMPTY-s">내일을 기대해봐요!</div></div>', unsafe_allow_html=True)
+        st.markdown(render_games_horizontal(today_games, show_pitcher=True), unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         st.link_button(f"📋 네이버 스포츠 오늘 경기", f"https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime('%Y%m%d')}", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -878,62 +1047,32 @@ with t_game:
     gc1, gc2 = st.columns([3, 2], gap="medium")
 
     with gc1:
+        # 오늘 전체 경기 — 가로 스크롤
+        st.markdown('<div class="T-card"><div class="T-card-title">📅 오늘 전체 경기</div>', unsafe_allow_html=True)
+        st.markdown(render_games_horizontal(tg, show_pitcher=True), unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.link_button("📋 네이버 스포츠 오늘 경기", f"https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime('%Y%m%d')}", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
         # 롯데 오늘 경기 빅 카드
         st.markdown('<div class="T-card"><div class="T-card-title">⚾ 오늘 롯데 자이언츠 경기</div>', unsafe_allow_html=True)
         if lotg:
-            g = lotg[0]
-            aw, hm = g["away"], g["home"]
-            bdg = state_badge(g["state"], g["time"])
-            st.markdown(f"""
-            <div style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border-radius:18px;padding:32px;text-align:center">
-                <div style="margin-bottom:14px">{bdg}</div>
-                <div style="display:flex;align-items:center;justify-content:center;gap:28px">
-                    <div>
-                        <div style="font-size:26px;font-weight:900;color:#191F28">{aw}</div>
-                        <div style="font-size:12px;color:#6B7684;margin-top:4px;font-weight:600">원정</div>
-                    </div>
-                    <div style="font-size:38px;font-weight:900;color:#191F28;letter-spacing:7px;
-                                padding:14px 28px;background:#fff;border-radius:16px;
-                                box-shadow:0 4px 16px rgba(0,0,0,.08)">{g['score']}</div>
-                    <div>
-                        <div style="font-size:26px;font-weight:900;color:#191F28">{hm}</div>
-                        <div style="font-size:12px;color:#6B7684;margin-top:4px;font-weight:600">홈</div>
-                    </div>
-                </div>
-                <div style="margin-top:16px;font-size:13px;color:#6B7684;font-weight:600">
-                    {'🏟 '+g['stadium'] if g['stadium'] else ''}
-                </div>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(render_lotte_game_big(lotg[0]), unsafe_allow_html=True)
         else:
             st.markdown('<div class="EMPTY" style="padding:32px 0"><div class="EMPTY-i">🌙</div><div class="EMPTY-t">오늘 롯데 경기 없음</div><div class="EMPTY-s">다음 경기를 기대해요!</div></div>', unsafe_allow_html=True)
-        st.link_button("📋 네이버 스포츠 오늘 경기", f"https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime('%Y%m%d')}", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         # 문자 중계
         st.markdown('<div class="T-card"><div class="T-card-title">📡 실시간 문자 중계 <span class="S-live" style="font-size:11px"><span class="ldot"></span>LIVE</span></div><p style="font-size:13px;color:#8B95A1;margin-bottom:14px">경기 중일 때 실시간 중계를 확인할 수 있습니다</p>', unsafe_allow_html=True)
-        st.components.v1.iframe("https://sports.daum.net/match/80090756", height=500, scrolling=True)
+        if lotg and lotg[0].get("game_id"):
+            gid = lotg[0]["game_id"]
+            live_url = f"https://www.koreabaseball.com/GameCenter/Main.aspx?gameId={gid}"
+        else:
+            live_url = "https://sports.daum.net/match/80090756"
+        st.components.v1.iframe(live_url, height=500, scrolling=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with gc2:
-        # 전체 경기
-        st.markdown('<div class="T-card"><div class="T-card-title">📋 오늘 전체 경기</div>', unsafe_allow_html=True)
-        if tg:
-            for g in tg:
-                aw, hm = g["away"], g["home"]
-                is_l = g["is_lotte"]
-                st.markdown(f"""
-                <div class="G-card {'lotte' if is_l else ''}" style="padding:13px 16px">
-                    <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px">
-                        <span style="font-size:14px;font-weight:{'900' if is_l else '600'};color:#191F28;min-width:40px;text-align:right">{aw}</span>
-                        <span style="background:#F2F4F7;border-radius:8px;padding:5px 14px;font-size:16px;font-weight:900;color:#191F28;letter-spacing:4px">{g['score']}</span>
-                        <span style="font-size:14px;font-weight:{'900' if is_l else '600'};color:#191F28;min-width:40px">{hm}</span>
-                        {state_badge(g['state'],g['time'])}
-                    </div>
-                </div>""", unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="EMPTY" style="padding:24px 0"><div class="EMPTY-i">📅</div><div class="EMPTY-t">오늘은 경기가 없어요</div></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
         # 하이라이트
         st.markdown('<div class="T-card"><div class="T-card-title">🎬 최신 하이라이트</div>', unsafe_allow_html=True)
         if hl:
@@ -951,6 +1090,13 @@ with t_game:
         else:
             st.markdown('<div class="EMPTY" style="padding:20px 0"><div class="EMPTY-i">🎬</div><div class="EMPTY-t">영상을 불러오지 못했어요</div></div>', unsafe_allow_html=True)
         st.link_button("▶ YouTube 더보기", "https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # 티켓/일정
+        st.markdown('<div class="T-card"><div class="T-card-title">🎟️ 티켓 예매</div>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.8">일반 예매 오픈<br>경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong></p>', unsafe_allow_html=True)
+        st.link_button("🎫 예매 페이지", "https://ticket.giantsclub.com/loginForm.do", use_container_width=True)
+        st.link_button("📋 시즌 일정", "https://www.giantsclub.com/html/?pcode=257", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 
