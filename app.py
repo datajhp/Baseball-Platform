@@ -383,22 +383,10 @@ HDR = {
 }
 
 # ══════════════════════════════════════════
-#  팀 로고 (KBO 공식 엠블럼)
+#  팀 로고 — JS 이벤트 핸들러 없는 순수 HTML
 # ══════════════════════════════════════════
+# 네이버 스포츠 CDN (안정적, CORS 없음)
 TEAM_LOGO = {
-    "LG":  "https://www.koreabaseball.com/file/team/logo/bi_LG.png",
-    "SSG": "https://www.koreabaseball.com/file/team/logo/bi_SK.png",
-    "두산": "https://www.koreabaseball.com/file/team/logo/bi_OB.png",
-    "삼성": "https://www.koreabaseball.com/file/team/logo/bi_SS.png",
-    "NC":  "https://www.koreabaseball.com/file/team/logo/bi_NC.png",
-    "롯데": "https://www.koreabaseball.com/file/team/logo/bi_LT.png",
-    "키움": "https://www.koreabaseball.com/file/team/logo/bi_WO.png",
-    "KT":  "https://www.koreabaseball.com/file/team/logo/bi_KT.png",
-    "KIA": "https://www.koreabaseball.com/file/team/logo/bi_HT.png",
-    "한화": "https://www.koreabaseball.com/file/team/logo/bi_HH.png",
-}
-# Naver fallback
-TEAM_LOGO_NV = {
     "LG":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LG.png",
     "SSG": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SK.png",
     "두산": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/OB.png",
@@ -412,11 +400,12 @@ TEAM_LOGO_NV = {
 }
 
 def team_logo_html(team_name, size=52):
-    primary = TEAM_LOGO.get(team_name, "")
-    fallback = TEAM_LOGO_NV.get(team_name, "")
-    if not primary:
-        return f'<div style="width:{size}px;height:{size}px;border-radius:50%;background:#F2F4F7;display:flex;align-items:center;justify-content:center;font-size:{size//3}px;font-weight:800;color:#8B95A1">{team_name[:2]}</div>'
-    return f'<img src="{primary}" onerror="this.src=\'{fallback}\'" alt="{team_name}" style="width:{size}px;height:{size}px;object-fit:contain">'
+    url = TEAM_LOGO.get(team_name, "")
+    if url:
+        # onerror 없이 단순 img 태그
+        return f'<img src="{url}" alt="{team_name}" width="{size}" height="{size}" style="object-fit:contain">'
+    # 로고 없으면 텍스트 뱃지
+    return f'<div style="width:{size}px;height:{size}px;border-radius:50%;background:#F2F4F7;display:inline-flex;align-items:center;justify-content:center;font-size:{size//4}px;font-weight:800;color:#6B7684">{team_name[:2]}</div>'
 
 
 # ══════════════════════════════════════════
