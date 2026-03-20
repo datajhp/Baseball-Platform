@@ -1323,7 +1323,7 @@ with t_predict:
 
         ai_body = f"""
 <div style="text-align:center;padding:8px 0 4px">
-  <div style="font-size:13px;color:#8B95A1;font-weight:600;margin-bottom:16px">순위표 승률 기반 AI 예측</div>
+  <div style="font-size:13px;color:#8B95A1;font-weight:600;margin-bottom:16px">AI 예측</div>
   <div style="display:flex;align-items:flex-end;justify-content:center;gap:16px;margin-bottom:16px">
     <div style="text-align:center">
       <div style="font-size:42px;font-weight:900;color:#DC2626;line-height:1">{ai_lotte_pct}%</div>
@@ -1332,7 +1332,7 @@ with t_predict:
     <div style="font-size:22px;color:#E5E7EB;font-weight:300;padding-bottom:12px">:</div>
     <div style="text-align:center">
       <div style="font-size:42px;font-weight:900;color:#1D4ED8;line-height:1">{ai_opp_pct}%</div>
-      <div style="font-size:12px;color:#1D4ED8;font-weight:700;margin-top:4px">💙 {opp_name}</div>
+      <div style="font-size:12px;color:#1D4ED8;font-weight:700;margin-top:4px">🔵 {opp_name}</div>
     </div>
   </div>
   <div style="height:10px;border-radius:999px;overflow:hidden;background:#F2F4F7;margin-bottom:14px">
@@ -1348,8 +1348,8 @@ with t_predict:
         # ── 투표 입력 카드
         st.markdown(f"""
         <div class="T-card">
-            <div class="T-card-title">🗳️ 당신의 예측은?</div>
-        """, unsafe_allow_html=True)
+            <div class="T-card-title">🗳️ 당신의 승부 예측은?
+                    """, unsafe_allow_html=True)
         if not sb:
             st.warning("⚠️ 데이터베이스 연결이 필요합니다.")
         else:
@@ -1371,7 +1371,8 @@ with t_predict:
                         st.balloons(); st.rerun()
                     else:
                         st.error("등록에 실패했습니다.")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)  
+            </div>
 
     with pr2:
         # ── 팬 투표 현황 카드
