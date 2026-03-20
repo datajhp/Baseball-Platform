@@ -1348,31 +1348,31 @@ with t_predict:
         # ── 투표 입력 카드
         st.markdown(f"""
         <div class="T-card">
-            <div class="T-card-title">🗳️ 당신의 승부 예측은?
-                    """, unsafe_allow_html=True)
-        if not sb:
-            st.warning("⚠️ 데이터베이스 연결이 필요합니다.")
-        else:
-            pn = st.text_input("닉네임", placeholder="닉네임을 입력하세요", key="pn", label_visibility="collapsed")
-            pt = st.radio(
-                "예측",
-                [f"🔴 롯데 자이언츠 이겨라!!", f"💙 {opp_name} 이길 것 같아요"],
-                label_visibility="collapsed"
-            )
-            if st.button("🎯  예측 제출하기", type="primary", use_container_width=True):
-                if not pn.strip():
-                    st.warning("닉네임을 입력해주세요.")
-                elif tv > 0 and pn.strip() in pred_votes["nickname"].values:
-                    st.warning("이미 오늘 예측을 완료했어요! 😊")
-                else:
-                    team_val = "롯데" if "롯데" in pt else "상대팀"
-                    if db_add_vote(pn.strip(), team_val):
-                        st.success(f"✅ {pn.strip()}님의 예측이 등록됐어요!")
-                        st.balloons(); st.rerun()
+            <div class="T-card-title">🗳️ 당신의 승부 예측은?</div>
+            """, unsafe_allow_html=True)
+            if not sb:
+                st.warning("⚠️ 데이터베이스 연결이 필요합니다.")
+            else:
+                pn = st.text_input("닉네임", placeholder="닉네임을 입력하세요", key="pn", label_visibility="collapsed")
+                pt = st.radio(
+                    "예측",
+                    [f"🔴 롯데 자이언츠 이겨라!!", f"💙 {opp_name} 이길 것 같아요"],
+                    label_visibility="collapsed"
+                )
+                if st.button("🎯  예측 제출하기", type="primary", use_container_width=True):
+                    if not pn.strip():
+                        st.warning("닉네임을 입력해주세요.")
+                    elif tv > 0 and pn.strip() in pred_votes["nickname"].values:
+                        st.warning("이미 오늘 예측을 완료했어요! 😊")
                     else:
-                        st.error("등록에 실패했습니다.")
-        st.markdown('</div>', unsafe_allow_html=True)  
-            </div>
+                        team_val = "롯데" if "롯데" in pt else "상대팀"
+                        if db_add_vote(pn.strip(), team_val):
+                            st.success(f"✅ {pn.strip()}님의 예측이 등록됐어요!")
+                            st.balloons(); st.rerun()
+                        else:
+                            st.error("등록에 실패했습니다.")
+            st.markdown('</div>', unsafe_allow_html=True)
+
 
     with pr2:
         # ── 팬 투표 현황 카드
