@@ -977,7 +977,7 @@ with t_home:
             lp = round(ln/tv*100,1); op = round(100-lp,1)
             vb_l = "롯데" if lp > 20 else ""
             vb_r = "상대팀" if op > 20 else ""
-            vote_body = f'<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;margin-bottom:8px"><span style="color:#DC2626">🔴 롯데 {lp}%</span><span style="color:#1D4ED8">{op}% 상대팀 💙</span></div><div class="VB-wrap"><div class="VB-l" style="width:{lp}%">{vb_l}</div><div class="VB-r">{vb_r}</div></div><p style="text-align:center;font-size:12px;color:#8B95A1;margin-top:8px;font-weight:600">총 {tv}명 참여 중</p>'
+            vote_body = f'<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;margin-bottom:8px"><span style="color:#DC2626">🔴 롯데 {lp}%</span><span style="color:#1D4ED8">{op}% 우리에게 질 상대팀 🔵</span></div><div class="VB-wrap"><div class="VB-l" style="width:{lp}%">{vb_l}</div><div class="VB-r">{vb_r}</div></div><p style="text-align:center;font-size:12px;color:#8B95A1;margin-top:8px;font-weight:600">총 {tv}명 참여 중</p>'
         else:
             vote_body = '<div class="EMPTY" style="padding:18px 0"><div class="EMPTY-i">🗳️</div><div class="EMPTY-t">아직 예측이 없어요</div><div class="EMPTY-s">승부예측 탭에서 투표하세요!</div></div>'
         st.markdown(f'<div class="T-card"><div class="T-card-title">🎯 오늘의 예측 현황</div>{vote_body}</div>', unsafe_allow_html=True)
