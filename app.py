@@ -210,6 +210,59 @@ div[data-testid="stVerticalBlockBorderWrapper"] > div {
     border-radius: 50%; background: #EF4444;
     animation: blink 1.4s infinite;
 }
+
+/* ══════════════════════════════════════
+   반응형 레이아웃 — Streamlit 컬럼 재배치
+   ══════════════════════════════════════ */
+
+/* 1160px 이하: 전체 컬럼 너비를 균등하게 */
+@media (max-width: 1160px) {
+    /* 홈 3컬럼 → 좌우 컬럼을 상대적으로 넓게 */
+    .main .block-container { padding: 1.5rem 1rem 5rem !important; }
+
+    /* Streamlit이 flex로 렌더링하는 columns 컨테이너 */
+    div[data-testid="stHorizontalBlock"] {
+        flex-wrap: wrap !important;
+    }
+
+    /* 첫 번째(순위) 컬럼 — 전체 너비로 */
+    div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:first-child {
+        min-width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+
+    /* 가운데(경기+뉴스) 컬럼 — 60% */
+    div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(2) {
+        min-width: 60% !important;
+        flex: 1 1 60% !important;
+    }
+
+    /* 오른쪽(하이라이트+티켓) 컬럼 — 38% */
+    div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(3) {
+        min-width: 38% !important;
+        flex: 1 1 38% !important;
+    }
+}
+
+/* 900px 이하: 2컬럼으로 변환 */
+@media (max-width: 900px) {
+    div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+        min-width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+}
+
+/* 640px 이하: 완전 1컬럼 */
+@media (max-width: 640px) {
+    .main .block-container { padding: 1rem 0.75rem 4rem !important; }
+    div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+        min-width: 100% !important;
+        flex: 1 1 100% !important;
+        width: 100% !important;
+    }
+    /* iframe 카드도 작게 */
+    iframe { min-height: unset !important; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -231,15 +284,16 @@ COMPONENT_CSS = """
 }
 
 /* ── KBO 순위표 ── */
-.T-table { width: 100%; border-collapse: collapse; }
+.T-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .T-table th {
     background: #F8F9FB; color: #8B95A1 !important; font-weight: 700;
-    padding: 10px 6px; text-align: center; font-size: 11px;
-    letter-spacing: .4px; border-bottom: 2px solid #ECEEF2; text-transform: uppercase;
+    padding: 8px 4px; text-align: center; font-size: 10px;
+    letter-spacing: .2px; border-bottom: 2px solid #ECEEF2; white-space: nowrap; overflow: hidden;
 }
 .T-table td {
-    padding: 12px 6px; text-align: center;
-    color: #333D4B !important; border-bottom: 1px solid #F5F6F8; font-size: 13px;
+    padding: 10px 4px; text-align: center;
+    color: #333D4B !important; border-bottom: 1px solid #F5F6F8; font-size: 12px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .T-table tr.HL td {
     background: #EFF6FF !important; color: #1D4ED8 !important; font-weight: 800 !important;
@@ -288,9 +342,10 @@ COMPONENT_CSS = """
     transition:all .2s;
 }
 .YT-card:hover { border-color:#BFDBFE;box-shadow:0 4px 16px rgba(49,130,246,.1);transform:translateY(-1px); }
-.YT-thumb { width:108px;height:66px;object-fit:cover;border-radius:8px;flex-shrink:0; }
-.YT-ttl { font-size:13px !important;font-weight:700 !important;color:#191F28 !important;line-height:1.5;margin-bottom:4px; }
-.YT-meta { font-size:11px !important;color:#8B95A1 !important; }
+.YT-thumb { width:88px;height:54px;object-fit:cover;border-radius:8px;flex-shrink:0; }
+.YT-ttl { font-size:12px !important;font-weight:700 !important;color:#191F28 !important;line-height:1.5;margin-bottom:4px;
+          display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
+.YT-meta { font-size:10px !important;color:#8B95A1 !important; }
 
 /* ── 투표 바 ── */
 .VB-wrap { display:flex;height:56px;border-radius:14px;overflow:hidden;background:#F2F4F7;margin:8px 0; }
@@ -396,16 +451,16 @@ HDR = {
 # ══════════════════════════════════════════
 # 네이버 스포츠 CDN (안정적, CORS 없음)
 TEAM_LOGO = {
-    "LG":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_LG.png",
-    "SSG": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_SK.png",
-    "두산": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_OB.png",
-    "삼성": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_SS.png",
-    "NC":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_NC.png",
-    "롯데": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_LT.png",
-    "키움": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_WO.png",
-    "KT":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_KT.png",
-    "KIA": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_HT.png",
-    "한화": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_HH.png",
+    "LG":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LG.png",
+    "SSG": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SK.png",
+    "두산": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/OB.png",
+    "삼성": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SS.png",
+    "NC":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/NC.png",
+    "롯데": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LT.png",
+    "키움": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/WO.png",
+    "KT":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/KT.png",
+    "KIA": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HT.png",
+    "한화": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HH.png",
 }
 
 def team_logo_html(team_name, size=52):
@@ -955,7 +1010,7 @@ with t_home:
     highlights  = get_youtube_highlights()
     votes       = db_today_votes()
 
-    cL, cC, cR = st.columns([1.4, 2.8, 1.5], gap="medium")
+    cL, cC, cR = st.columns([1.6, 2.8, 1.8], gap="medium")
 
     # ─ 왼쪽
     with cL:
@@ -966,8 +1021,8 @@ with t_home:
                 rank = str(r.get("순위",""))
                 is_l = "롯데" in str(r.get("팀",""))
                 rc = {"1":"RN1","2":"RN2","3":"RN3"}.get(rank,"RNn")
-                rows += f'<tr class="{"HL" if is_l else ""}"><td><span class="RN {rc}">{rank}</span></td><td style="text-align:left;padding-left:8px;font-weight:{"900" if is_l else "500"};color:{"#1D4ED8" if is_l else "#333D4B"}">{r.get("팀","")}</td><td style="color:{"#1D4ED8" if is_l else "#333D4B"}">{r.get("승","")}</td><td style="color:{"#1D4ED8" if is_l else "#6B7684"}">{r.get("패","")}</td><td style="color:{"#1D4ED8" if is_l else "#333D4B"}">{r.get("승률","")}</td><td style="color:#8B95A1">{r.get("게임차","")}</td></tr>'
-            rank_body = f'<table class="T-table"><thead><tr><th>순위</th><th style="text-align:left;padding-left:8px">팀</th><th>승</th><th>패</th><th>승률</th><th>게임차</th></tr></thead><tbody>{rows}</tbody></table>'
+                rows += f'<tr class="{"HL" if is_l else ""}"><td><span class="RN {rc}">{rank}</span></td><td style="text-align:left;padding-left:6px;font-weight:{"900" if is_l else "500"};color:{"#1D4ED8" if is_l else "#333D4B"}">{r.get("팀","")}</td><td style="color:{"#1D4ED8" if is_l else "#333D4B"}">{r.get("승","")}</td><td style="color:{"#1D4ED8" if is_l else "#6B7684"}">{r.get("패","")}</td><td style="color:{"#1D4ED8" if is_l else "#333D4B"}">{r.get("승률","")}</td></tr>'
+            rank_body = f'<table class="T-table"><thead><tr><th>순위</th><th style="text-align:left;padding-left:6px">팀</th><th>승</th><th>패</th><th>승률</th></tr></thead><tbody>{rows}</tbody></table>'
         else:
             rank_body = '<div class="EMPTY"><div class="EMPTY-i">📡</div><div class="EMPTY-t">순위 로딩 실패</div><div class="EMPTY-s">새로고침 해주세요</div></div>'
         st.markdown(f'<div class="T-card"><div class="T-card-title">🏆 KBO 리그 순위</div>{rank_body}</div>', unsafe_allow_html=True)
@@ -977,9 +1032,9 @@ with t_home:
         if tv > 0:
             ln = len(votes[votes["selected_team"]=="롯데"])
             lp = round(ln/tv*100,1); op = round(100-lp,1)
-            vb_l = "🔥최강 롯데🔥" if lp > 20 else ""
+            vb_l = "롯데" if lp > 20 else ""
             vb_r = "상대팀" if op > 20 else ""
-            vote_body = f'<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;margin-bottom:8px"><span style="color:#DC2626">🔴 최강 롯데 자이언츠 {lp}%</span><span style="color:#1D4ED8">{op}% 우리에게 질 상대팀 🔵</span></div><div class="VB-wrap"><div class="VB-l" style="width:{lp}%">{vb_l}</div><div class="VB-r">{vb_r}</div></div><p style="text-align:center;font-size:12px;color:#8B95A1;margin-top:8px;font-weight:600">총 {tv}명 참여 중</p>'
+            vote_body = f'<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;margin-bottom:8px"><span style="color:#DC2626">🔴 롯데 {lp}%</span><span style="color:#1D4ED8">{op}% 상대팀 💙</span></div><div class="VB-wrap"><div class="VB-l" style="width:{lp}%">{vb_l}</div><div class="VB-r">{vb_r}</div></div><p style="text-align:center;font-size:12px;color:#8B95A1;margin-top:8px;font-weight:600">총 {tv}명 참여 중</p>'
         else:
             vote_body = '<div class="EMPTY" style="padding:18px 0"><div class="EMPTY-i">🗳️</div><div class="EMPTY-t">아직 예측이 없어요</div><div class="EMPTY-s">승부예측 탭에서 투표하세요!</div></div>'
         st.markdown(f'<div class="T-card"><div class="T-card-title">🎯 오늘의 예측 현황</div>{vote_body}</div>', unsafe_allow_html=True)
