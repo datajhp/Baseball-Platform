@@ -387,16 +387,16 @@ HDR = {
 # ══════════════════════════════════════════
 # 네이버 스포츠 CDN (안정적, CORS 없음)
 TEAM_LOGO = {
-    "LG":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LG.png",
-    "SSG": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SK.png",
-    "두산": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/OB.png",
-    "삼성": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SS.png",
-    "NC":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/NC.png",
-    "롯데": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LT.png",
-    "키움": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/WO.png",
-    "KT":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/KT.png",
-    "KIA": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HT.png",
-    "한화": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HH.png",
+    "LG":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_LG.png",
+    "SSG": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_SK.png",
+    "두산": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_OB.png",
+    "삼성": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_SS.png",
+    "NC":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_NC.png",
+    "롯데": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_LT.png",
+    "키움": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_WO.png",
+    "KT":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_KT.png",
+    "KIA": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_HT.png",
+    "한화": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_HH.png",
 }
 
 def team_logo_html(team_name, size=52):
