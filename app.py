@@ -932,108 +932,67 @@ with t_home:
 
     # ─ 왼쪽
     with cL:
-        # KBO 순위
-        st.markdown('<div class="T-card"><div class="T-card-title">🏆 KBO 리그 순위</div>', unsafe_allow_html=True)
+        # KBO 순위 — 단일 호출
         if standings is not None:
             rows = ""
             for _, r in standings.iterrows():
                 rank = str(r.get("순위",""))
                 is_l = "롯데" in str(r.get("팀",""))
                 rc = {"1":"RN1","2":"RN2","3":"RN3"}.get(rank,"RNn")
-                rows += f"""<tr class="{'HL' if is_l else ''}">
-                    <td><span class="RN {rc}">{rank}</span></td>
-                    <td style="text-align:left;padding-left:8px;font-weight:{'900' if is_l else '500'};color:{'#1D4ED8' if is_l else '#333D4B'}">
-                        {r.get('팀','')}
-                    </td>
-                    <td style="color:{'#1D4ED8' if is_l else '#333D4B'}">{r.get('승','')}</td>
-                    <td style="color:{'#1D4ED8' if is_l else '#6B7684'}">{r.get('패','')}</td>
-                    <td style="color:{'#1D4ED8' if is_l else '#333D4B'}">{r.get('승률','')}</td>
-                    <td style="color:#8B95A1">{r.get('게임차','')}</td>
-                </tr>"""
-            st.markdown(f"""
-            <table class="T-table">
-                <thead><tr>
-                    <th>순위</th><th style="text-align:left;padding-left:8px">팀</th>
-                    <th>승</th><th>패</th><th>승률</th><th>게임차</th>
-                </tr></thead>
-                <tbody>{rows}</tbody>
-            </table>""", unsafe_allow_html=True)
+                rows += f'<tr class="{"HL" if is_l else ""}"><td><span class="RN {rc}">{rank}</span></td><td style="text-align:left;padding-left:8px;font-weight:{"900" if is_l else "500"};color:{"#1D4ED8" if is_l else "#333D4B"}">{r.get("팀","")}</td><td style="color:{"#1D4ED8" if is_l else "#333D4B"}">{r.get("승","")}</td><td style="color:{"#1D4ED8" if is_l else "#6B7684"}">{r.get("패","")}</td><td style="color:{"#1D4ED8" if is_l else "#333D4B"}">{r.get("승률","")}</td><td style="color:#8B95A1">{r.get("게임차","")}</td></tr>'
+            rank_body = f'<table class="T-table"><thead><tr><th>순위</th><th style="text-align:left;padding-left:8px">팀</th><th>승</th><th>패</th><th>승률</th><th>게임차</th></tr></thead><tbody>{rows}</tbody></table>'
         else:
-            st.markdown('<div class="EMPTY"><div class="EMPTY-i">📡</div><div class="EMPTY-t">순위 로딩 실패</div><div class="EMPTY-s">새로고침 해주세요</div></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            rank_body = '<div class="EMPTY"><div class="EMPTY-i">📡</div><div class="EMPTY-t">순위 로딩 실패</div><div class="EMPTY-s">새로고침 해주세요</div></div>'
+        st.markdown(f'<div class="T-card"><div class="T-card-title">🏆 KBO 리그 순위</div>{rank_body}</div>', unsafe_allow_html=True)
 
-        # 예측 미리보기
+        # 예측 미리보기 — 단일 호출
         tv = len(votes)
-        st.markdown('<div class="T-card"><div class="T-card-title">🎯 오늘의 예측 현황</div>', unsafe_allow_html=True)
         if tv > 0:
             ln = len(votes[votes["selected_team"]=="롯데"])
             lp = round(ln/tv*100,1); op = round(100-lp,1)
-            st.markdown(f"""
-            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;margin-bottom:8px;color:#191F28">
-                <span style="color:#DC2626">🔴 롯데 {lp}%</span>
-                <span style="color:#1D4ED8">{op}% 상대팀 💙</span>
-            </div>
-            <div class="VB-wrap">
-                <div class="VB-l" style="width:{lp}%">{"롯데" if lp>20 else ""}</div>
-                <div class="VB-r">{"상대팀" if op>20 else ""}</div>
-            </div>
-            <p style="text-align:center;font-size:12px;color:#8B95A1;margin-top:8px;font-weight:600">총 {tv}명 참여 중</p>
-            """, unsafe_allow_html=True)
+            vb_l = "롯데" if lp > 20 else ""
+            vb_r = "상대팀" if op > 20 else ""
+            vote_body = f'<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;margin-bottom:8px"><span style="color:#DC2626">🔴 롯데 {lp}%</span><span style="color:#1D4ED8">{op}% 상대팀 💙</span></div><div class="VB-wrap"><div class="VB-l" style="width:{lp}%">{vb_l}</div><div class="VB-r">{vb_r}</div></div><p style="text-align:center;font-size:12px;color:#8B95A1;margin-top:8px;font-weight:600">총 {tv}명 참여 중</p>'
         else:
-            st.markdown('<div class="EMPTY" style="padding:18px 0"><div class="EMPTY-i">🗳️</div><div class="EMPTY-t">아직 예측이 없어요</div><div class="EMPTY-s">승부예측 탭에서 투표하세요!</div></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            vote_body = '<div class="EMPTY" style="padding:18px 0"><div class="EMPTY-i">🗳️</div><div class="EMPTY-t">아직 예측이 없어요</div><div class="EMPTY-s">승부예측 탭에서 투표하세요!</div></div>'
+        st.markdown(f'<div class="T-card"><div class="T-card-title">🎯 오늘의 예측 현황</div>{vote_body}</div>', unsafe_allow_html=True)
 
     # ─ 가운데
     with cC:
-        # 오늘 경기 — 가로 카드
-        st.markdown(f'<div class="T-card"><div class="T-card-title">📅 오늘의 KBO 경기 <span style="font-size:13px;color:#8B95A1;font-weight:500">· {today.strftime("%m/%d")}</span></div>', unsafe_allow_html=True)
-        st.markdown(render_games_horizontal(today_games, show_pitcher=True), unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.link_button(f"📋 네이버 스포츠 오늘 경기", f"https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime('%Y%m%d')}", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # 오늘 경기 — 단일 호출
+        game_html = render_games_horizontal(today_games, show_pitcher=True)
+        nav_a = f'<a href="https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime("%Y%m%d")}" target="_blank" style="display:block;text-align:center;margin-top:14px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">📋 네이버 스포츠 오늘 경기</a>'
+        st.markdown(f'<div class="T-card"><div class="T-card-title">📅 오늘의 KBO 경기 <span style="font-size:13px;color:#8B95A1;font-weight:500">· {today.strftime("%m/%d")}</span></div>{game_html}{nav_a}</div>', unsafe_allow_html=True)
 
-        # 뉴스
-        st.markdown('<div class="T-card"><div class="T-card-title">📰 롯데 자이언츠 최신 뉴스</div>', unsafe_allow_html=True)
+        # 뉴스 — 단일 호출
         if news_list:
+            news_items = ""
             for i, n in enumerate(news_list[:8], 1):
-                st.markdown(f"""
-                <div class="N-item">
-                    <span class="N-num">{i}</span>
-                    <div>
-                        <div class="N-title"><a href="{n['url']}" target="_blank">{n['title']}</a></div>
-                        <div class="N-press">{n.get('press','')} · {n.get('pub','')}</div>
-                    </div>
-                </div>""", unsafe_allow_html=True)
+                news_items += f'<div class="N-item"><span class="N-num">{i}</span><div><div class="N-title"><a href="{n["url"]}" target="_blank">{n["title"]}</a></div><div class="N-press">{n.get("press","")} · {n.get("pub","")}</div></div></div>'
+            news_body = news_items
         else:
-            st.markdown('<div class="EMPTY" style="padding:20px 0"><div class="EMPTY-i">📡</div><div class="EMPTY-t">뉴스를 불러오지 못했어요</div></div>', unsafe_allow_html=True)
-        st.link_button("🔗 네이버 스포츠 뉴스 더보기", "https://sports.news.naver.com/kbaseball/news/index?type=team&teamCode=LT", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            news_body = '<div class="EMPTY" style="padding:20px 0"><div class="EMPTY-i">📡</div><div class="EMPTY-t">뉴스를 불러오지 못했어요</div></div>'
+        news_more = '<a href="https://sports.news.naver.com/kbaseball/news/index?type=team&teamCode=LT" target="_blank" style="display:block;text-align:center;margin-top:12px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">🔗 네이버 스포츠 뉴스 더보기</a>'
+        st.markdown(f'<div class="T-card"><div class="T-card-title">📰 롯데 자이언츠 최신 뉴스</div>{news_body}{news_more}</div>', unsafe_allow_html=True)
 
     # ─ 오른쪽
     with cR:
-        st.markdown('<div class="T-card"><div class="T-card-title">🎬 최신 하이라이트</div>', unsafe_allow_html=True)
+        # 하이라이트 — 단일 호출
         if highlights:
+            yt_items = ""
             for v in highlights[:2]:
                 vid = v["id"]
                 thumb = v.get("thumb") or f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
-                st.markdown(f"""
-                <a class="YT-card" href="https://www.youtube.com/watch?v={vid}" target="_blank">
-                    <img class="YT-thumb" src="{thumb}" onerror="this.src='https://img.youtube.com/vi/{vid}/hqdefault.jpg'" alt="">
-                    <div>
-                        <div class="YT-ttl">{v.get('title','')[:52]}</div>
-                        <div class="YT-meta">{v.get('channel','')} · {v.get('time','')}</div>
-                    </div>
-                </a>""", unsafe_allow_html=True)
+                yt_items += f'<a class="YT-card" href="https://www.youtube.com/watch?v={vid}" target="_blank"><img class="YT-thumb" src="{thumb}" onerror="this.src=\'https://img.youtube.com/vi/{vid}/hqdefault.jpg\'" alt=""><div><div class="YT-ttl">{v.get("title","")[:52]}</div><div class="YT-meta">{v.get("channel","")} · {v.get("time","")}</div></div></a>'
+            hl_body = yt_items
         else:
-            st.markdown('<div class="EMPTY" style="padding:20px 0"><div class="EMPTY-i">🎬</div><div class="EMPTY-t">영상 로딩 실패</div></div>', unsafe_allow_html=True)
-        st.link_button("▶ YouTube 더보기", "https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            hl_body = '<div class="EMPTY" style="padding:20px 0"><div class="EMPTY-i">🎬</div><div class="EMPTY-t">영상 로딩 실패</div></div>'
+        yt_more = '<a href="https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D" target="_blank" style="display:block;text-align:center;margin-top:12px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">▶ YouTube 더보기</a>'
+        st.markdown(f'<div class="T-card"><div class="T-card-title">🎬 최신 하이라이트</div>{hl_body}{yt_more}</div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="T-card"><div class="T-card-title">🎟️ 티켓 예매</div>', unsafe_allow_html=True)
-        st.markdown('<p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.8">일반 예매 오픈<br>경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong></p>', unsafe_allow_html=True)
-        st.link_button("🎫 예매 페이지", "https://ticket.giantsclub.com/loginForm.do", use_container_width=True)
-        st.link_button("📋 시즌 일정", "https://www.giantsclub.com/html/?pcode=257", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # 티켓 — 단일 호출
+        ticket_body = '<p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.8">일반 예매 오픈<br>경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong></p><a href="https://ticket.giantsclub.com/loginForm.do" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none;margin-bottom:8px">🎫 예매 페이지</a><a href="https://www.giantsclub.com/html/?pcode=257" target="_blank" style="display:block;text-align:center;padding:10px;background:#F2F4F7;color:#333D4B;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">📋 시즌 일정</a>'
+        st.markdown(f'<div class="T-card"><div class="T-card-title">🎟️ 티켓 예매</div>{ticket_body}</div>', unsafe_allow_html=True)
 
 
 # ════════════════════════════════════════════════════
@@ -1047,57 +1006,44 @@ with t_game:
     gc1, gc2 = st.columns([3, 2], gap="medium")
 
     with gc1:
-        # 오늘 전체 경기 — 가로 스크롤
-        st.markdown('<div class="T-card"><div class="T-card-title">📅 오늘 전체 경기</div>', unsafe_allow_html=True)
-        st.markdown(render_games_horizontal(tg, show_pitcher=True), unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.link_button("📋 네이버 스포츠 오늘 경기", f"https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime('%Y%m%d')}", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # 오늘 전체 경기 — 단일 호출
+        gh = render_games_horizontal(tg, show_pitcher=True)
+        na = f'<a href="https://sports.news.naver.com/kbaseball/schedule/index?date={today.strftime("%Y%m%d")}" target="_blank" style="display:block;text-align:center;margin-top:14px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">📋 네이버 스포츠 오늘 경기</a>'
+        st.markdown(f'<div class="T-card"><div class="T-card-title">📅 오늘 전체 경기</div>{gh}{na}</div>', unsafe_allow_html=True)
 
-        # 롯데 오늘 경기 빅 카드
-        st.markdown('<div class="T-card"><div class="T-card-title">⚾ 오늘 롯데 자이언츠 경기</div>', unsafe_allow_html=True)
+        # 롯데 오늘 경기 빅 카드 — 단일 호출
         if lotg:
-            st.markdown(render_lotte_game_big(lotg[0]), unsafe_allow_html=True)
+            big = render_lotte_game_big(lotg[0])
         else:
-            st.markdown('<div class="EMPTY" style="padding:32px 0"><div class="EMPTY-i">🌙</div><div class="EMPTY-t">오늘 롯데 경기 없음</div><div class="EMPTY-s">다음 경기를 기대해요!</div></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            big = '<div class="EMPTY" style="padding:32px 0"><div class="EMPTY-i">🌙</div><div class="EMPTY-t">오늘 롯데 경기 없음</div><div class="EMPTY-s">다음 경기를 기대해요!</div></div>'
+        st.markdown(f'<div class="T-card"><div class="T-card-title">⚾ 오늘 롯데 자이언츠 경기</div>{big}</div>', unsafe_allow_html=True)
 
-        # 문자 중계
-        st.markdown('<div class="T-card"><div class="T-card-title">📡 실시간 문자 중계 <span class="S-live" style="font-size:11px"><span class="ldot"></span>LIVE</span></div><p style="font-size:13px;color:#8B95A1;margin-bottom:14px">경기 중일 때 실시간 중계를 확인할 수 있습니다</p>', unsafe_allow_html=True)
+        # 문자 중계 (iframe은 별도 컴포넌트라 단일 호출 불가)
         if lotg and lotg[0].get("game_id"):
-            gid = lotg[0]["game_id"]
-            live_url = f"https://www.koreabaseball.com/GameCenter/Main.aspx?gameId={gid}"
+            live_url = f"https://www.koreabaseball.com/GameCenter/Main.aspx?gameId={lotg[0]['game_id']}"
         else:
             live_url = "https://sports.daum.net/match/80090756"
+        st.markdown('<div class="T-card"><div class="T-card-title">📡 실시간 문자 중계 <span class="S-live" style="font-size:11px"><span class="ldot"></span>LIVE</span></div><p style="font-size:13px;color:#8B95A1;margin-bottom:14px">경기 중일 때 실시간 중계를 확인할 수 있습니다</p>', unsafe_allow_html=True)
         st.components.v1.iframe(live_url, height=500, scrolling=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with gc2:
-        # 하이라이트
-        st.markdown('<div class="T-card"><div class="T-card-title">🎬 최신 하이라이트</div>', unsafe_allow_html=True)
+        # 하이라이트 — 단일 호출
         if hl:
+            yt_items = ""
             for v in hl[:3]:
                 vid = v["id"]
                 thumb = v.get("thumb") or f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
-                st.markdown(f"""
-                <a class="YT-card" href="https://www.youtube.com/watch?v={vid}" target="_blank">
-                    <img class="YT-thumb" src="{thumb}" style="width:104px;height:62px" onerror="this.src='https://img.youtube.com/vi/{vid}/hqdefault.jpg'" alt="">
-                    <div>
-                        <div class="YT-ttl">{v.get('title','')[:46]}</div>
-                        <div class="YT-meta">{v.get('channel','')} · {v.get('time','')}</div>
-                    </div>
-                </a>""", unsafe_allow_html=True)
+                yt_items += f'<a class="YT-card" href="https://www.youtube.com/watch?v={vid}" target="_blank"><img style="width:104px;height:62px;object-fit:cover;border-radius:8px;flex-shrink:0" src="{thumb}" onerror="this.src=\'https://img.youtube.com/vi/{vid}/hqdefault.jpg\'" alt=""><div><div class="YT-ttl">{v.get("title","")[:46]}</div><div class="YT-meta">{v.get("channel","")} · {v.get("time","")}</div></div></a>'
+            hl_body = yt_items
         else:
-            st.markdown('<div class="EMPTY" style="padding:20px 0"><div class="EMPTY-i">🎬</div><div class="EMPTY-t">영상을 불러오지 못했어요</div></div>', unsafe_allow_html=True)
-        st.link_button("▶ YouTube 더보기", "https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            hl_body = '<div class="EMPTY" style="padding:20px 0"><div class="EMPTY-i">🎬</div><div class="EMPTY-t">영상을 불러오지 못했어요</div></div>'
+        yt_more2 = '<a href="https://www.youtube.com/results?search_query=롯데+자이언츠+하이라이트&sp=CAI%3D" target="_blank" style="display:block;text-align:center;margin-top:12px;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">▶ YouTube 더보기</a>'
+        st.markdown(f'<div class="T-card"><div class="T-card-title">🎬 최신 하이라이트</div>{hl_body}{yt_more2}</div>', unsafe_allow_html=True)
 
-        # 티켓/일정
-        st.markdown('<div class="T-card"><div class="T-card-title">🎟️ 티켓 예매</div>', unsafe_allow_html=True)
-        st.markdown('<p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.8">일반 예매 오픈<br>경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong></p>', unsafe_allow_html=True)
-        st.link_button("🎫 예매 페이지", "https://ticket.giantsclub.com/loginForm.do", use_container_width=True)
-        st.link_button("📋 시즌 일정", "https://www.giantsclub.com/html/?pcode=257", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # 티켓 — 단일 호출
+        ticket2 = '<p style="font-size:13px;color:#6B7684;margin-bottom:14px;line-height:1.8">일반 예매 오픈<br>경기 <strong style="color:#3182F6">1주일 전 오후 2시</strong></p><a href="https://ticket.giantsclub.com/loginForm.do" target="_blank" style="display:block;text-align:center;padding:10px;background:#3182F6;color:#fff;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none;margin-bottom:8px">🎫 예매 페이지</a><a href="https://www.giantsclub.com/html/?pcode=257" target="_blank" style="display:block;text-align:center;padding:10px;background:#F2F4F7;color:#333D4B;border-radius:12px;font-weight:700;font-size:14px;text-decoration:none">📋 시즌 일정</a>'
+        st.markdown(f'<div class="T-card"><div class="T-card-title">🎟️ 티켓 예매</div>{ticket2}</div>', unsafe_allow_html=True)
 
 
 # ════════════════════════════════════════════════════
