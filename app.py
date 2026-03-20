@@ -1350,7 +1350,6 @@ with t_predict:
         <div class="T-card">
             <div class="T-card-title">🗳️ 당신의 승부 예측은?</div>
         <div class="T-card-title">닉네임</div>
-        """, unsafe_allow_html=True)
         if not sb:
             st.warning("⚠️ 데이터베이스 연결이 필요합니다.")
         else:
@@ -1373,6 +1372,8 @@ with t_predict:
                     else:
                         st.error("등록에 실패했습니다.")
         st.markdown('</div>', unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+        
 
 
     with pr2:
