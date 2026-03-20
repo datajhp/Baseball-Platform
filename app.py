@@ -1351,7 +1351,7 @@ with t_predict:
             <div class="T-card-title">🗳️ 당신의 승부 예측은?</div>
         <div class="T-card-title">닉네임</div>
         """, unsafe_allow_html=True)
-                if not sb:
+        if not sb:
             st.warning("⚠️ 데이터베이스 연결이 필요합니다.")
         else:
             pn = st.text_input("닉네임", placeholder="닉네임을 입력하세요", key="pn", label_visibility="collapsed")
