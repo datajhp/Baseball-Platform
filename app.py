@@ -451,16 +451,16 @@ HDR = {
 # ══════════════════════════════════════════
 # 네이버 스포츠 CDN (안정적, CORS 없음)
 TEAM_LOGO = {
-    "LG":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LG.png",
-    "SSG": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SK.png",
-    "두산": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/OB.png",
-    "삼성": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/SS.png",
-    "NC":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/NC.png",
-    "롯데": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/LT.png",
-    "키움": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/WO.png",
-    "KT":  "https://ssl.pstatic.net/imgkibo/kboemblem/2024/KT.png",
-    "KIA": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HT.png",
-    "한화": "https://ssl.pstatic.net/imgkibo/kboemblem/2024/HH.png",
+    "LG":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_LG.png",
+    "SSG": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_SK.png",
+    "두산": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_OB.png",
+    "삼성": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_SS.png",
+    "NC":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_NC.png",
+    "롯데": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_LT.png",
+    "키움": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_WO.png",
+    "KT":  "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_KT.png",
+    "KIA": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_HT.png",
+    "한화": "https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/fixed/emblem_HH.png",
 }
 
 def team_logo_html(team_name, size=52):
@@ -1034,7 +1034,7 @@ with t_home:
             lp = round(ln/tv*100,1); op = round(100-lp,1)
             vb_l = "롯데" if lp > 20 else ""
             vb_r = "상대팀" if op > 20 else ""
-            vote_body = f'<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;margin-bottom:8px"><span style="color:#DC2626">🔴 롯데 {lp}%</span><span style="color:#1D4ED8">{op}% 상대팀 💙</span></div><div class="VB-wrap"><div class="VB-l" style="width:{lp}%">{vb_l}</div><div class="VB-r">{vb_r}</div></div><p style="text-align:center;font-size:12px;color:#8B95A1;margin-top:8px;font-weight:600">총 {tv}명 참여 중</p>'
+            vote_body = f'<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;margin-bottom:8px"><span style="color:#DC2626">🔴 최강 롯데 자이언츠 {lp}%</span><span style="color:#1D4ED8">{op}% 우리에게 질 상대팀 🔵</span></div><div class="VB-wrap"><div class="VB-l" style="width:{lp}%">{vb_l}</div><div class="VB-r">{vb_r}</div></div><p style="text-align:center;font-size:12px;color:#8B95A1;margin-top:8px;font-weight:600">총 {tv}명 참여 중</p>'
         else:
             vote_body = '<div class="EMPTY" style="padding:18px 0"><div class="EMPTY-i">🗳️</div><div class="EMPTY-t">아직 예측이 없어요</div><div class="EMPTY-s">승부예측 탭에서 투표하세요!</div></div>'
         st.markdown(f'<div class="T-card"><div class="T-card-title">🎯 오늘의 예측 현황</div>{vote_body}</div>', unsafe_allow_html=True)
